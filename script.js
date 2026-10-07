@@ -363,7 +363,7 @@ true,
 
 hideMessage();
 
-updateProjectHeader(project);
+renderHeader();;
 
 
 const separator =
