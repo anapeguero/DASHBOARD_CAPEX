@@ -1,0 +1,46 @@
+{
+  "projects": [
+    {
+      "id": "mao",
+      "name": "Mao",
+      "openingDate": "2026-11-15",
+      "file": "data/projects/mao.xlsx"
+    },
+    {
+      "id": "hispano",
+      "name": "Hispano",
+      "openingDate": "2026-12-15",
+      "file": "data/projects/hispano.xlsx"
+    },
+    {
+      "id": "veron",
+      "name": "Veron",
+      "openingDate": "2026-10-15",
+      "file": "data/projects/veron.xlsx"
+    },
+    {
+      "id": "naco",
+      "name": "Naco",
+      "openingDate": "2027-05-15",
+      "file": "data/projects/naco.xlsx"
+    },
+    {
+      "id": "enriquillo",
+      "name": "Enriquillo",
+      "openingDate": "2027-05-15",
+      "file": "data/projects/enriquillo.xlsx"
+    },
+    {
+      "id": "bonao",
+      "name": "Bonao",
+      "openingDate": "2026-02-15",
+      "file": "data/projects/bonao.xlsx"
+    },
+    {
+      "id": "charles",
+      "name": "Charles",
+      "openingDate": "2026-11-15",
+      "file": "data/projects/charles.xlsx"
+    }
+  ]
+}
