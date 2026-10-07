@@ -1,57 +1,98 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0"
+>
 
 <title>Dashboard CAPEX | Grupo Ramos</title>
 
-<link rel="stylesheet" href="style.css">
+<!-- Poppins -->
+<link
+rel="preconnect"
+href="https://fonts.googleapis.com"
+>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<link
+rel="preconnect"
+href="https://fonts.gstatic.com"
+crossorigin
+>
+
+<link
+href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+rel="stylesheet"
+>
+
+<!-- CSS -->
+<link
+rel="stylesheet"
+href="style.css"
+>
 </head>
+
 
 <body>
 
-<!-- LOADING -->
-<div id="loadingOverlay" class="loading-overlay hidden">
-<div class="loading-card">
+<!-- ======================================================
+LOADING
+======================================================= -->
+
+<div
+id="loadingOverlay"
+class="loading-overlay hidden"
+>
+<div class="loading-box">
+
 <div class="spinner"></div>
-<strong id="loadingText">Leyendo archivo Excel</strong>
-<span>Procesando información del proyecto...</span>
+
+<strong id="loadingText">
+Leyendo archivo Excel
+</strong>
+
+<span>
+Procesando información del proyecto
+</span>
+
 </div>
 </div>
 
 
-<div class="app-shell">
-
-<!-- =====================================================
+<!-- ======================================================
 SIDEBAR
-====================================================== -->
+======================================================= -->
+
 <aside class="sidebar">
 
-<div class="brand">
-<div class="brand-logo-wrap">
+<!-- MARCA -->
+
+<div class="sidebar-brand">
+
+<div class="brand-logo">
 <img
 src="assets/grupo-ramos.png"
 alt="Grupo Ramos"
-class="brand-logo"
 >
 </div>
 
-<div class="brand-copy">
-<span class="brand-kicker">Grupo Ramos</span>
-<strong>Dashboard CAPEX</strong>
+<div class="brand-text">
+<h2>CAPEX</h2>
+<span>Control de iniciativas</span>
 </div>
+
 </div>
 
 
-<!-- SELECTOR DE INICIATIVA -->
-<div class="project-box">
+<!-- SELECTOR DE PROYECTO -->
+
+<div class="sidebar-project">
 
 <label for="projectSelect">
-INICIATIVA
+Iniciativa
 </label>
 
 <select id="projectSelect">
@@ -60,103 +101,134 @@ Cargando...
 </option>
 </select>
 
-<small id="projectLoadStatus">
+<div
+id="projectLoadStatus"
+class="project-load-status"
+>
 Cargando iniciativas...
-</small>
+</div>
 
 </div>
 
 
 <!-- NAVEGACIÓN -->
-<nav id="navTabs" class="nav-tabs">
+
+<nav
+id="navTabs"
+class="sidebar-nav"
+>
 
 <button
 class="nav-item active"
 data-page="home"
 type="button"
 >
-<span class="nav-icon">⌂</span>
+<span class="nav-icon">IN</span>
 <span>Inicio</span>
 </button>
+
 
 <button
 class="nav-item"
 data-page="executive"
 type="button"
 >
-<span class="nav-icon">▦</span>
+<span class="nav-icon">RE</span>
 <span>Resumen Ejecutivo</span>
 </button>
+
 
 <button
 class="nav-item"
 data-page="budget"
 type="button"
 >
-<span class="nav-icon">$</span>
+<span class="nav-icon">PR</span>
 <span>Presupuesto vs Real</span>
 </button>
+
 
 <button
 class="nav-item"
 data-page="purchases"
 type="button"
 >
-<span class="nav-icon">▣</span>
+<span class="nav-icon">CO</span>
 <span>Compras</span>
 </button>
 
-<button
-class="nav-item"
-data-page="cashflow"
-type="button"
->
-<span class="nav-icon">↗</span>
-<span>Flujo de Caja</span>
-</button>
-
-<button
-class="nav-item"
-data-page="tracking"
-type="button"
->
-<span class="nav-icon">◎</span>
-<span>Seguimiento</span>
-</button>
 
 <button
 class="nav-item"
 data-page="pending"
 type="button"
 >
-<span class="nav-icon">!</span>
+<span class="nav-icon">PE</span>
 <span>Pendientes</span>
+</button>
+
+
+<button
+class="nav-item"
+data-page="cashflow"
+type="button"
+>
+<span class="nav-icon">FC</span>
+<span>Flujo de Caja</span>
+</button>
+
+
+<button
+class="nav-item"
+data-page="tracking"
+type="button"
+>
+<span class="nav-icon">SE</span>
+<span>Seguimiento</span>
 </button>
 
 </nav>
 
 
+<!-- FOOTER -->
+
 <div class="sidebar-footer">
-<span>Compras de Activos Fijos</span>
-<small>Expansión · Eficiencia · Experiencia</small>
+
+<div class="source-label">
+Fuente de información
+</div>
+
+<div class="source-value">
+Excel de cada iniciativa
+</div>
+
+<div class="source-value">
+Presupuesto · Compras · Flujo
+</div>
+
 </div>
 
 </aside>
 
 
-<!-- =====================================================
+<!-- ======================================================
 CONTENIDO PRINCIPAL
-====================================================== -->
+======================================================= -->
+
 <main class="main-content">
 
-<!-- HEADER -->
+
+<!-- ====================================================
+TOPBAR
+===================================================== -->
+
 <header class="topbar">
 
-<div class="topbar-title">
+<div>
 
-<span class="eyebrow">
-DASHBOARD DE INICIATIVAS
-</span>
+<div class="eyebrow">
+GRUPO RAMOS · ACTIVOS FIJOS
+</div>
 
 <h1 id="topProjectName">
 Dashboard CAPEX
@@ -174,26 +246,36 @@ compras y flujo de caja.
 
 <div class="opening-card">
 
-<div>
-<span>Fecha de apertura</span>
-<strong id="openingDate">—</strong>
-</div>
+<span class="opening-label">
+Fecha de apertura
+</span>
 
-<div class="opening-divider"></div>
-
-<div>
-<span>Días restantes</span>
-<strong id="daysToOpening">—</strong>
-</div>
+<strong id="openingDate">
+—
+</strong>
 
 </div>
+
+
+<div class="countdown-card">
+
+<span class="countdown-label">
+Días para apertura
+</span>
+
+<strong id="daysToOpening">
+—
+</strong>
+
+</div>
+
 
 <button
 id="refreshButton"
-class="refresh-button"
+class="btn-secondary"
 type="button"
 >
-↻ Actualizar
+Actualizar
 </button>
 
 </div>
@@ -202,183 +284,261 @@ type="button"
 
 
 <!-- MENSAJES -->
+
 <div
 id="dashboardMessage"
 class="dashboard-message hidden"
 ></div>
 
 
-<!-- =================================================
+
+<!-- ====================================================
 INICIO
-================================================== -->
+===================================================== -->
+
 <section
 id="page-home"
 class="page active"
 >
 
-<div class="section-heading">
+<div class="page-heading">
+
 <div>
+
 <span class="section-kicker">
 VISIÓN GENERAL
 </span>
-<h2>Inicio</h2>
-</div>
+
+<h2>
+Inicio
+</h2>
 
 <p>
-Estado general de la iniciativa seleccionada.
+Resumen de la ejecución financiera
+y el avance de compras de la iniciativa.
 </p>
+
+</div>
+
 </div>
 
 
-<!-- KPI FINANCIEROS -->
-<div class="kpi-grid kpi-grid-5">
+<!-- KPI -->
+
+<div class="kpi-grid">
 
 <article class="kpi-card">
+
 <span class="kpi-label">
 Presupuesto
 </span>
+
 <strong
 id="homeBudget"
 class="kpi-value"
 >
 US$ 0.00
 </strong>
-<small>
-Presupuesto aprobado
-</small>
+
+<span class="kpi-note">
+Presupuesto total estimado
+</span>
+
 </article>
 
 
 <article class="kpi-card">
+
 <span class="kpi-label">
 Real
 </span>
+
 <strong
 id="homeReal"
 class="kpi-value"
 >
 US$ 0.00
 </strong>
-<small>
-Ejecución real
-</small>
+
+<span class="kpi-note">
+Ejecución real registrada
+</span>
+
 </article>
 
 
 <article class="kpi-card">
+
 <span class="kpi-label">
 Diferencia
 </span>
+
 <strong
 id="homeDifference"
 class="kpi-value"
 >
 US$ 0.00
 </strong>
-<small>
+
+<span class="kpi-note">
 Presupuesto menos real
-</small>
+</span>
+
 </article>
 
 
 <article class="kpi-card">
+
 <span class="kpi-label">
-Ejecución
+% Ejecución
 </span>
+
 <strong
 id="homeExecution"
 class="kpi-value"
 >
 0%
 </strong>
-<small>
-Real / presupuesto
-</small>
+
+<span class="kpi-note">
+Real sobre presupuesto
+</span>
+
 </article>
 
 
-<article class="kpi-card kpi-card-accent">
+<article class="kpi-card savings-card">
+
 <span class="kpi-label">
 Ahorro RD$
 </span>
+
 <strong
 id="homeSavingsDOP"
 class="kpi-value"
 >
 RD$ 0.00
 </strong>
-<small>
-Diferencia × tasa 60
-</small>
+
+<span class="kpi-note">
+Diferencia US$ × tasa 60
+</span>
+
 </article>
 
-</div>
 
+<article class="kpi-card">
 
-<!-- KPI COMPRAS -->
-<div class="mini-kpi-grid">
+<span class="kpi-label">
+Órdenes de Compra
+</span>
 
-<article class="mini-kpi">
-<span>Órdenes de compra</span>
-<strong id="homePOCount">0</strong>
+<strong
+id="homePOCount"
+class="kpi-value"
+>
+0
+</strong>
+
+<span class="kpi-note">
+Registros con OC
+</span>
+
 </article>
 
-<article class="mini-kpi">
-<span>Pendientes de compra</span>
-<strong id="homePendingCount">0</strong>
+
+<article class="kpi-card warning-card">
+
+<span class="kpi-label">
+Pendientes
+</span>
+
+<strong
+id="homePendingCount"
+class="kpi-value"
+>
+0
+</strong>
+
+<span class="kpi-note">
+Pendientes de compra
+</span>
+
 </article>
 
 </div>
 
 
 <!-- GRÁFICAS -->
-<div class="dashboard-grid dashboard-grid-2">
 
-<article class="panel">
+<div class="dashboard-grid two-columns">
+
+<section class="panel">
+
 <div class="panel-header">
+
 <div>
 <span class="panel-kicker">
 FINANCIERO
 </span>
-<h3>Presupuesto vs Real</h3>
+
+<h3>
+Presupuesto vs Real
+</h3>
 </div>
+
 </div>
 
 <div class="chart-container">
 <canvas id="homeBudgetChart"></canvas>
 </div>
-</article>
+
+</section>
 
 
-<article class="panel">
+<section class="panel">
+
 <div class="panel-header">
+
 <div>
 <span class="panel-kicker">
 COMPRAS
 </span>
-<h3>Estado de compras</h3>
+
+<h3>
+Estado de compras
+</h3>
 </div>
+
 </div>
 
 <div class="chart-container">
 <canvas id="homePurchaseChart"></canvas>
 </div>
-</article>
+
+</section>
 
 </div>
 
 
-<!-- TABLA -->
-<article class="panel">
+<!-- RESUMEN CATEGORÍAS -->
+
+<section class="panel">
 
 <div class="panel-header">
+
 <div>
 <span class="panel-kicker">
-PARTIDAS
+CATEGORÍAS
 </span>
-<h3>Resumen financiero</h3>
+
+<h3>
+Resumen de partidas
+</h3>
 </div>
+
 </div>
+
 
 <div class="table-wrapper">
 
@@ -386,60 +546,75 @@ PARTIDAS
 id="homeCategoryTable"
 class="data-table"
 >
+
 <thead>
 <tr>
 <th>Partida</th>
-<th>Presupuesto</th>
-<th>Real</th>
-<th>Diferencia</th>
-<th>% Ejecución</th>
+<th class="number">
+Presupuestado US$
+</th>
+<th class="number">
+Real US$
+</th>
+<th class="number">
+Diferencia US$
+</th>
+<th class="number">
+% Ejecución
+</th>
 </tr>
 </thead>
 
-<tbody>
-<tr>
-<td colspan="5">
-Cargando...
-</td>
-</tr>
-</tbody>
+<tbody></tbody>
+
 </table>
 
 </div>
 
-</article>
+</section>
 
 </section>
 
 
-<!-- =================================================
+
+<!-- ====================================================
 RESUMEN EJECUTIVO
-================================================== -->
+===================================================== -->
+
 <section
 id="page-executive"
 class="page"
 >
 
-<div class="section-heading">
+<div class="page-heading">
+
 <div>
+
 <span class="section-kicker">
 DIRECCIÓN
 </span>
-<h2>Resumen Ejecutivo</h2>
-</div>
+
+<h2>
+Resumen Ejecutivo
+</h2>
 
 <p>
-Principales indicadores de la iniciativa.
+Indicadores principales de ejecución
+financiera, compras y apertura.
 </p>
+
+</div>
+
 </div>
 
 
-<div class="kpi-grid kpi-grid-5">
+<div class="kpi-grid">
 
 <article class="kpi-card">
 <span class="kpi-label">
 Presupuesto
 </span>
+
 <strong
 id="executiveBudget"
 class="kpi-value"
@@ -448,10 +623,12 @@ US$ 0.00
 </strong>
 </article>
 
+
 <article class="kpi-card">
 <span class="kpi-label">
 Real
 </span>
+
 <strong
 id="executiveReal"
 class="kpi-value"
@@ -460,10 +637,12 @@ US$ 0.00
 </strong>
 </article>
 
+
 <article class="kpi-card">
 <span class="kpi-label">
 Diferencia
 </span>
+
 <strong
 id="executiveDifference"
 class="kpi-value"
@@ -472,10 +651,12 @@ US$ 0.00
 </strong>
 </article>
 
+
 <article class="kpi-card">
 <span class="kpi-label">
-Ejecución
+% Ejecución
 </span>
+
 <strong
 id="executiveExecution"
 class="kpi-value"
@@ -484,220 +665,374 @@ class="kpi-value"
 </strong>
 </article>
 
-<article class="kpi-card kpi-card-accent">
+
+<article class="kpi-card savings-card">
+
 <span class="kpi-label">
 Ahorro RD$
 </span>
+
 <strong
 id="executiveSavingsDOP"
 class="kpi-value"
 >
 RD$ 0.00
 </strong>
+
+</article>
+
+
+<article class="kpi-card">
+
+<span class="kpi-label">
+Con OC
+</span>
+
+<strong
+id="executivePO"
+class="kpi-value"
+>
+0
+</strong>
+
+</article>
+
+
+<article class="kpi-card warning-card">
+
+<span class="kpi-label">
+Pendientes
+</span>
+
+<strong
+id="executivePending"
+class="kpi-value"
+>
+0
+</strong>
+
 </article>
 
 </div>
 
 
-<div class="executive-grid">
+<div class="dashboard-grid two-columns">
 
-<article class="panel progress-panel">
+<section class="panel">
 
 <div class="panel-header">
 <div>
 <span class="panel-kicker">
 AVANCE
 </span>
-<h3>Ejecución presupuestaria</h3>
+
+<h3>
+Ejecución financiera
+</h3>
 </div>
+</div>
+
+
+<div class="progress-block">
+
+<div class="progress-info">
+
+<span>
+Avance presupuestario
+</span>
 
 <strong id="executiveProgressText">
 0%
 </strong>
+
 </div>
 
+
 <div class="progress-track">
+
 <div
 id="executiveProgressBar"
 class="progress-bar"
 ></div>
-</div>
-
-
-<div class="executive-stats">
-
-<div>
-<span>Órdenes de compra</span>
-<strong id="executivePO">0</strong>
-</div>
-
-<div>
-<span>Pendientes</span>
-<strong id="executivePending">0</strong>
-</div>
-
-<div>
-<span>Días para apertura</span>
-<strong id="executiveDays">—</strong>
-</div>
-
-<div>
-<span>Fecha de apertura</span>
-<strong id="executiveOpeningDate">—</strong>
-</div>
 
 </div>
-
-</article>
-
-
-<article class="panel">
-
-<div class="panel-header">
-<div>
-<span class="panel-kicker">
-PARTIDAS
-</span>
-<h3>Presupuesto vs Real</h3>
-</div>
-</div>
-
-<div class="chart-container chart-tall">
-<canvas id="executiveCategoryChart"></canvas>
-</div>
-
-</article>
 
 </div>
 
 </section>
 
 
-<!-- =================================================
+<section class="panel">
+
+<div class="panel-header">
+
+<div>
+<span class="panel-kicker">
+APERTURA
+</span>
+
+<h3>
+Cuenta regresiva
+</h3>
+</div>
+
+</div>
+
+
+<div class="opening-summary">
+
+<strong id="executiveDays">
+—
+</strong>
+
+<span>
+días para apertura
+</span>
+
+<small id="executiveOpeningDate">
+—
+</small>
+
+</div>
+
+</section>
+
+</div>
+
+
+<section class="panel">
+
+<div class="panel-header">
+
+<div>
+<span class="panel-kicker">
+DISTRIBUCIÓN
+</span>
+
+<h3>
+Presupuesto y real por partida
+</h3>
+</div>
+
+</div>
+
+
+<div class="chart-container large-chart">
+<canvas id="executiveCategoryChart"></canvas>
+</div>
+
+</section>
+
+</section>
+
+
+
+<!-- ====================================================
 PRESUPUESTO VS REAL
-================================================== -->
+===================================================== -->
+
 <section
 id="page-budget"
 class="page"
 >
 
-<div class="section-heading">
+<div class="page-heading">
+
 <div>
+
 <span class="section-kicker">
 CONTROL FINANCIERO
 </span>
-<h2>Presupuesto vs Real</h2>
-</div>
+
+<h2>
+Presupuesto vs Real
+</h2>
 
 <p>
-Información tomada de la hoja
-“Presupuesto vs Real”.
+Comparación de lo presupuestado
+contra la ejecución real por partida.
 </p>
+
+</div>
+
 </div>
 
 
-<div class="kpi-grid kpi-grid-5">
+<!-- KPI -->
+
+<div class="kpi-grid">
 
 <article class="kpi-card">
+
 <span class="kpi-label">
 Presupuesto
 </span>
+
 <strong
 id="budgetTotal"
 class="kpi-value"
 >
 US$ 0.00
 </strong>
+
 </article>
 
+
 <article class="kpi-card">
+
 <span class="kpi-label">
 Real
 </span>
+
 <strong
 id="realTotal"
 class="kpi-value"
 >
 US$ 0.00
 </strong>
+
 </article>
 
+
 <article class="kpi-card">
+
 <span class="kpi-label">
 Diferencia
 </span>
+
 <strong
 id="differenceTotal"
 class="kpi-value"
 >
 US$ 0.00
 </strong>
+
 </article>
 
+
 <article class="kpi-card">
+
 <span class="kpi-label">
-Ejecución
+% Ejecución
 </span>
+
 <strong
 id="budgetExecution"
 class="kpi-value"
 >
 0%
 </strong>
+
 </article>
 
-<article class="kpi-card kpi-card-accent">
+
+<article class="kpi-card savings-card">
+
 <span class="kpi-label">
 Ahorro RD$
 </span>
+
 <strong
 id="budgetSavingsDOP"
 class="kpi-value"
 >
 RD$ 0.00
 </strong>
+
+<span class="kpi-note">
+Diferencia US$ × tasa 60
+</span>
+
 </article>
 
 </div>
 
 
-<article class="panel">
+<!-- GRÁFICA -->
+
+<section class="panel">
 
 <div class="panel-header">
+
 <div>
+
 <span class="panel-kicker">
-COMPARATIVO
+COMPARACIÓN
 </span>
-<h3>Presupuesto y ejecución</h3>
-</div>
+
+<h3>
+Presupuesto y ejecución por partida
+</h3>
+
 </div>
 
-<div class="chart-container chart-tall">
+</div>
+
+
+<div class="chart-container large-chart">
+
 <canvas id="budgetVsRealChart"></canvas>
+
 </div>
 
-</article>
+</section>
 
 
-<article class="panel">
+<!-- TABLA DINÁMICA -->
 
-<div class="panel-header panel-header-responsive">
+<section class="panel">
+
+<div class="panel-header">
 
 <div>
+
 <span class="panel-kicker">
 DETALLE
 </span>
-<h3>Resumen de partidas</h3>
+
+<h3>
+Resumen de Partidas
+</h3>
+
 </div>
+
+
+<div class="panel-tools">
+
+<!-- NUEVOS BOTONES -->
+
+<div class="budget-tree-tools">
+
+<button
+id="expandBudget"
+class="btn-secondary small"
+type="button"
+>
+Expandir todo
+</button>
+
+
+<button
+id="collapseBudget"
+class="btn-secondary small"
+type="button"
+>
+Contraer todo
+</button>
+
+</div>
+
 
 <input
 id="budgetSearch"
-class="search-input"
 type="search"
 placeholder="Buscar partida..."
 >
 
 </div>
+
+</div>
+
 
 <div class="table-wrapper">
 
@@ -705,127 +1040,178 @@ placeholder="Buscar partida..."
 id="budgetTable"
 class="data-table"
 >
+
 <thead>
+
 <tr>
-<th>Partida</th>
-<th>Presupuesto</th>
-<th>Real</th>
-<th>Diferencia</th>
-<th>% Ejecución</th>
+
+<th>
+Partida
+</th>
+
+<th class="number">
+Presupuestado US$
+</th>
+
+<th class="number">
+Real US$
+</th>
+
+<th class="number">
+Diferencia US$
+</th>
+
+<th class="number">
+% Ejecución
+</th>
+
 </tr>
+
 </thead>
 
+
 <tbody></tbody>
+
 </table>
 
 </div>
 
-</article>
+</section>
 
 </section>
 
 
-<!-- =================================================
+
+<!-- ====================================================
 COMPRAS
-================================================== -->
+===================================================== -->
+
 <section
 id="page-purchases"
 class="page"
 >
 
-<div class="section-heading">
+<div class="page-heading">
+
 <div>
+
 <span class="section-kicker">
 ABASTECIMIENTO
 </span>
-<h2>Compras</h2>
-</div>
+
+<h2>
+Compras
+</h2>
 
 <p>
-Seguimiento de OC, pendientes y stock.
+Seguimiento de órdenes de compra,
+pendientes y materiales en stock.
 </p>
+
+</div>
+
 </div>
 
 
-<div class="kpi-grid kpi-grid-4">
+<div class="kpi-grid four-columns">
 
 <article class="kpi-card">
+
 <span class="kpi-label">
 Con OC
 </span>
+
 <strong
 id="purchasePOCount"
 class="kpi-value"
 >
 0
 </strong>
+
 </article>
 
-<article class="kpi-card">
+
+<article class="kpi-card warning-card">
+
 <span class="kpi-label">
 Pendientes
 </span>
+
 <strong
 id="purchasePendingCount"
 class="kpi-value"
 >
 0
 </strong>
+
 </article>
 
+
 <article class="kpi-card">
+
 <span class="kpi-label">
 Stock
 </span>
+
 <strong
 id="purchaseStockCount"
 class="kpi-value"
 >
 0
 </strong>
+
 </article>
 
-<article class="kpi-card kpi-card-accent">
+
+<article class="kpi-card">
+
 <span class="kpi-label">
 Valor con OC
 </span>
+
 <strong
 id="purchasePOValue"
 class="kpi-value"
 >
 RD$ 0.00
 </strong>
+
 </article>
 
 </div>
 
 
-<article class="panel">
+<!-- FILTROS -->
 
-<div class="panel-header panel-header-responsive">
-
-<div>
-<span class="panel-kicker">
-DETALLE DE COMPRAS
-</span>
-<h3>Órdenes y estatus</h3>
-</div>
+<section class="panel filter-panel">
 
 <div class="filters-row">
 
+<div class="filter-field">
+
+<label for="purchaseSearch">
+Buscar
+</label>
+
 <input
 id="purchaseSearch"
-class="search-input"
 type="search"
-placeholder="Buscar partida, ítem u OC..."
+placeholder="Partida, item u OC..."
 >
 
-<select
-id="purchaseStatusFilter"
-class="filter-select"
->
+</div>
+
+
+<div class="filter-field">
+
+<label for="purchaseStatusFilter">
+Estado
+</label>
+
+<select id="purchaseStatusFilter">
+
 <option value="all">
-Todos los estatus
+Todos
 </option>
 
 <option value="po">
@@ -833,14 +1219,36 @@ Con OC
 </option>
 
 <option value="pending">
-Pendiente
+Pendiente de compra
 </option>
 
 <option value="stock">
 Stock
 </option>
+
 </select>
 
+</div>
+
+</div>
+
+</section>
+
+
+<!-- TABLA -->
+
+<section class="panel">
+
+<div class="panel-header">
+
+<div>
+<span class="panel-kicker">
+DETALLE
+</span>
+
+<h3>
+Seguimiento de compras
+</h3>
 </div>
 
 </div>
@@ -852,342 +1260,153 @@ Stock
 id="purchaseTable"
 class="data-table"
 >
+
 <thead>
+
 <tr>
+
 <th>Partida</th>
-<th>Ítem</th>
-<th>Orden de compra</th>
+<th>Item</th>
+<th>Orden de Compra</th>
 <th>Fecha</th>
-<th>Cant.</th>
-<th>Valor Neto RD$</th>
-<th>Estatus</th>
+
+<th class="number">
+Cant.
+</th>
+
+<th class="number">
+Valor Neto RD$
+</th>
+
+<th>
+Estado
+</th>
+
 </tr>
+
 </thead>
 
 <tbody></tbody>
+
 </table>
 
 </div>
 
-</article>
+</section>
 
 </section>
 
 
-<!-- =================================================
-FLUJO DE CAJA
-================================================== -->
-<section
-id="page-cashflow"
-class="page"
->
 
-<div class="section-heading">
-<div>
-<span class="section-kicker">
-PLANIFICACIÓN
-</span>
-<h2>Flujo de Caja</h2>
-</div>
-
-<p>
-Distribución de pagos por partida y período.
-</p>
-</div>
-
-
-<div class="kpi-grid kpi-grid-3">
-
-<article class="kpi-card kpi-card-accent">
-<span class="kpi-label">
-Flujo total
-</span>
-<strong
-id="cashflowTotal"
-class="kpi-value"
->
-RD$ 0.00
-</strong>
-</article>
-
-<article class="kpi-card">
-<span class="kpi-label">
-Partidas
-</span>
-<strong
-id="cashflowCategoryCount"
-class="kpi-value"
->
-0
-</strong>
-</article>
-
-<article class="kpi-card">
-<span class="kpi-label">
-Períodos
-</span>
-<strong
-id="cashflowPeriodCount"
-class="kpi-value"
->
-0
-</strong>
-</article>
-
-</div>
-
-
-<article class="panel">
-
-<div class="panel-header">
-<div>
-<span class="panel-kicker">
-DISTRIBUCIÓN
-</span>
-<h3>Flujo mensual</h3>
-</div>
-</div>
-
-<div class="chart-container chart-tall">
-<canvas id="cashflowChart"></canvas>
-</div>
-
-</article>
-
-
-<article class="panel">
-
-<div class="panel-header panel-header-responsive">
-
-<div>
-<span class="panel-kicker">
-DETALLE
-</span>
-<h3>Flujo por partida</h3>
-</div>
-
-<div class="button-group">
-
-<button
-id="expandCashflow"
-class="secondary-button"
-type="button"
->
-Expandir todo
-</button>
-
-<button
-id="collapseCashflow"
-class="secondary-button"
-type="button"
->
-Contraer todo
-</button>
-
-</div>
-
-</div>
-
-
-<div class="table-wrapper cashflow-wrapper">
-
-<table
-id="cashflowTable"
-class="data-table cashflow-table"
->
-<thead id="cashflowTableHead"></thead>
-<tbody id="cashflowTableBody"></tbody>
-</table>
-
-</div>
-
-</article>
-
-</section>
-
-
-<!-- =================================================
-SEGUIMIENTO
-================================================== -->
-<section
-id="page-tracking"
-class="page"
->
-
-<div class="section-heading">
-<div>
-<span class="section-kicker">
-MONITOREO
-</span>
-<h2>Seguimiento</h2>
-</div>
-
-<p>
-Cruce financiero y avance de compras.
-</p>
-</div>
-
-
-<div class="dashboard-grid dashboard-grid-2">
-
-<article class="panel">
-
-<div class="panel-header">
-<div>
-<span class="panel-kicker">
-COMPRAS
-</span>
-<h3>Distribución por estatus</h3>
-</div>
-</div>
-
-<div class="chart-container">
-<canvas id="trackingStatusChart"></canvas>
-</div>
-
-</article>
-
-
-<article class="panel">
-
-<div class="panel-header">
-<div>
-<span class="panel-kicker">
-FINANCIERO
-</span>
-<h3>Presupuesto vs Real</h3>
-</div>
-</div>
-
-<div class="chart-container">
-<canvas id="trackingFinancialChart"></canvas>
-</div>
-
-</article>
-
-</div>
-
-
-<article class="panel">
-
-<div class="panel-header">
-<div>
-<span class="panel-kicker">
-MATRIZ
-</span>
-<h3>Seguimiento por partida</h3>
-</div>
-</div>
-
-
-<div class="table-wrapper">
-
-<table
-id="trackingTable"
-class="data-table"
->
-<thead>
-<tr>
-<th>Partida</th>
-<th>Presupuesto</th>
-<th>Real</th>
-<th>% Ejecución</th>
-<th>Con OC</th>
-<th>Pendientes</th>
-<th>Stock</th>
-</tr>
-</thead>
-
-<tbody></tbody>
-</table>
-
-</div>
-
-</article>
-
-</section>
-
-
-<!-- =================================================
+<!-- ====================================================
 PENDIENTES
-================================================== -->
+===================================================== -->
+
 <section
 id="page-pending"
 class="page"
 >
 
-<div class="section-heading">
+<div class="page-heading">
+
 <div>
+
 <span class="section-kicker">
-ACCIÓN
+PENDIENTES DE COMPRA
 </span>
-<h2>Pendientes de Compra</h2>
-</div>
+
+<h2>
+Pendientes
+</h2>
 
 <p>
-Ítems que aún requieren gestión de compra.
+Activos y partidas todavía pendientes
+de gestionar.
 </p>
+
+</div>
+
 </div>
 
 
-<div class="kpi-grid kpi-grid-3">
+<div class="kpi-grid three-columns">
 
-<article class="kpi-card">
+<article class="kpi-card warning-card">
+
 <span class="kpi-label">
-Ítems pendientes
+Total Pendientes
 </span>
+
 <strong
 id="pendingTotal"
 class="kpi-value"
 >
 0
 </strong>
+
 </article>
 
+
 <article class="kpi-card">
+
 <span class="kpi-label">
-Partidas afectadas
+Partidas con pendientes
 </span>
+
 <strong
 id="pendingCategoryCount"
 class="kpi-value"
 >
 0
 </strong>
+
 </article>
 
-<article class="kpi-card kpi-card-accent">
+
+<article class="kpi-card">
+
 <span class="kpi-label">
-Presupuesto pendiente
+Valor presupuestado
 </span>
+
 <strong
 id="pendingValue"
 class="kpi-value"
 >
 RD$ 0.00
 </strong>
+
 </article>
 
 </div>
 
 
-<article class="panel">
+<section class="panel">
 
-<div class="panel-header panel-header-responsive">
+<div class="panel-header">
 
 <div>
+
 <span class="panel-kicker">
 DETALLE
 </span>
-<h3>Activos pendientes</h3>
+
+<h3>
+Pendientes de compra
+</h3>
+
 </div>
+
+
+<div class="panel-tools">
 
 <input
 id="pendingSearch"
-class="search-input"
 type="search"
-placeholder="Buscar partida o ítem..."
+placeholder="Buscar partida o item..."
 >
+
+</div>
 
 </div>
 
@@ -1198,37 +1417,419 @@ placeholder="Buscar partida o ítem..."
 id="pendingTable"
 class="data-table"
 >
+
 <thead>
+
 <tr>
-<th>Partida</th>
-<th>Ítem</th>
-<th>Cant.</th>
-<th>Ppto. Orden Interna RD$</th>
-<th>Comentario</th>
+
+<th>
+Partida
+</th>
+
+<th>
+Item
+</th>
+
+<th class="number">
+Cant.
+</th>
+
+<th class="number">
+Ppto. Orden Interna RD$
+</th>
+
+<th>
+Comentario
+</th>
+
 </tr>
+
 </thead>
 
 <tbody></tbody>
+
 </table>
 
 </div>
 
-</article>
+</section>
 
 </section>
 
 
-<footer class="dashboard-footer">
-<span>Compras de Activos Fijos · Grupo Ramos</span>
-<span>Dashboard CAPEX</span>
-</footer>
 
-</main>
+<!-- ====================================================
+FLUJO DE CAJA
+===================================================== -->
+
+<section
+id="page-cashflow"
+class="page"
+>
+
+<div class="page-heading">
+
+<div>
+
+<span class="section-kicker">
+PLANIFICACIÓN FINANCIERA
+</span>
+
+<h2>
+Flujo de Caja
+</h2>
+
+<p>
+Distribución del flujo por partida
+y período.
+</p>
+
+</div>
 
 </div>
 
 
+<div class="kpi-grid three-columns">
+
+<article class="kpi-card">
+
+<span class="kpi-label">
+Flujo Total
+</span>
+
+<strong
+id="cashflowTotal"
+class="kpi-value"
+>
+RD$ 0.00
+</strong>
+
+</article>
+
+
+<article class="kpi-card">
+
+<span class="kpi-label">
+Partidas
+</span>
+
+<strong
+id="cashflowCategoryCount"
+class="kpi-value"
+>
+0
+</strong>
+
+</article>
+
+
+<article class="kpi-card">
+
+<span class="kpi-label">
+Períodos
+</span>
+
+<strong
+id="cashflowPeriodCount"
+class="kpi-value"
+>
+0
+</strong>
+
+</article>
+
+</div>
+
+
+<!-- GRÁFICA -->
+
+<section class="panel">
+
+<div class="panel-header">
+
+<div>
+
+<span class="panel-kicker">
+DISTRIBUCIÓN
+</span>
+
+<h3>
+Flujo mensual
+</h3>
+
+</div>
+
+</div>
+
+
+<div class="chart-container large-chart">
+
+<canvas id="cashflowChart"></canvas>
+
+</div>
+
+</section>
+
+
+<!-- TABLA FLUJO -->
+
+<section class="panel">
+
+<div class="panel-header">
+
+<div>
+
+<span class="panel-kicker">
+DETALLE
+</span>
+
+<h3>
+Flujo por partida
+</h3>
+
+</div>
+
+
+<div class="panel-tools">
+
+<button
+id="expandCashflow"
+class="btn-secondary small"
+type="button"
+>
+Expandir todo
+</button>
+
+
+<button
+id="collapseCashflow"
+class="btn-secondary small"
+type="button"
+>
+Contraer todo
+</button>
+
+</div>
+
+</div>
+
+
+<div
+class="table-wrapper cashflow-table-wrapper"
+>
+
+<table
+id="cashflowTable"
+class="data-table"
+>
+
+<thead id="cashflowTableHead">
+
+<tr>
+<th>
+Partida
+</th>
+
+<th class="number">
+Total
+</th>
+</tr>
+
+</thead>
+
+
+<tbody id="cashflowTableBody"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+</section>
+
+
+
+<!-- ====================================================
+SEGUIMIENTO
+===================================================== -->
+
+<section
+id="page-tracking"
+class="page"
+>
+
+<div class="page-heading">
+
+<div>
+
+<span class="section-kicker">
+CONTROL INTEGRADO
+</span>
+
+<h2>
+Seguimiento
+</h2>
+
+<p>
+Vista integrada de ejecución financiera
+y estado de compras.
+</p>
+
+</div>
+
+</div>
+
+
+<div class="dashboard-grid two-columns">
+
+<section class="panel">
+
+<div class="panel-header">
+
+<div>
+<span class="panel-kicker">
+FINANCIERO
+</span>
+
+<h3>
+Presupuesto vs Real
+</h3>
+</div>
+
+</div>
+
+
+<div class="chart-container">
+
+<canvas id="trackingFinancialChart"></canvas>
+
+</div>
+
+</section>
+
+
+<section class="panel">
+
+<div class="panel-header">
+
+<div>
+<span class="panel-kicker">
+COMPRAS
+</span>
+
+<h3>
+Estado general
+</h3>
+</div>
+
+</div>
+
+
+<div class="chart-container">
+
+<canvas id="trackingStatusChart"></canvas>
+
+</div>
+
+</section>
+
+</div>
+
+
+<section class="panel">
+
+<div class="panel-header">
+
+<div>
+
+<span class="panel-kicker">
+CONSOLIDADO
+</span>
+
+<h3>
+Seguimiento por partida
+</h3>
+
+</div>
+
+</div>
+
+
+<div class="table-wrapper">
+
+<table
+id="trackingTable"
+class="data-table"
+>
+
+<thead>
+
+<tr>
+
+<th>
+Partida
+</th>
+
+<th class="number">
+Presupuesto US$
+</th>
+
+<th class="number">
+Real US$
+</th>
+
+<th class="number">
+% Ejecución
+</th>
+
+<th class="number">
+Con OC
+</th>
+
+<th class="number">
+Pendientes
+</th>
+
+<th class="number">
+Stock
+</th>
+
+</tr>
+
+</thead>
+
+<tbody></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+</section>
+
+
+</main>
+
+
+<!-- ======================================================
+LIBRERÍAS
+======================================================= -->
+
+<!-- SheetJS -->
+<script
+src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+></script>
+
+<!-- Chart.js -->
+<script
+src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+></script>
+
+<!-- Dashboard -->
 <script src="script.js"></script>
 
 </body>
+
 </html>
