@@ -1,49 +1,35 @@
 /* ============================================================
-DASHBOARD CAPEX - GRUPO RAMOS
-script.js
-
-FUENTES:
-1. Presupuesto vs Real
-2. BD Plan Detallado
-3. Flujo de Caja
-
-REGLAS:
-- Presupuesto vs Real se muestra en USD.
-- Ahorro RD$ = Diferencia USD x 60.
-- Flujo de Caja se muestra en RD$.
-- "Pendiente de compra" = pendiente.
-- OC real = NO pendiente.
-- "Stock" = NO pendiente.
-- "Plan" = se excluye de indicadores generales.
-- No se utiliza información de proveedores.
+DASHBOARD CAPEX
+SCRIPT.JS
 ============================================================ */
 
+"use strict";
 
 /* ============================================================
 CONFIGURACIÓN
 ============================================================ */
 
-const EXCHANGE_RATE = 60;
-
-const CONFIG = {
-projectsFile: "data/projects.json",
-budgetSheet: "Presupuesto vs Real",
-detailSheet: "BD Plan Detallado",
-cashflowSheet: "Flujo de Caja"
-};
-
-
-/* ============================================================
-ESTADO GLOBAL
-============================================================ */
+const PROJECTS_URL = "data/projects.json";
+const SAVINGS_RATE = 60;
 
 let projects = [];
-
 let currentProject = null;
+let currentWorkbook = null;
 
-let dashboardData = null;
+let financialData = {
+budget: 0,
+real: 0,
+difference: 0,
+rows: []
+};
 
-let charts = {};
+let purchaseData = [];
+let cashflowData = {
+periods: [],
+rows: []
+};
+
+const charts = {};
 
 
 /* ============================================================
@@ -52,54 +38,31 @@ INICIO
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-setupNavigation();
+try {
 
+setupNavigation();
 setupEvents();
+
+showLoading(true, "Cargando iniciativas...");
 
 await loadProjects();
 
-});
+} catch (error) {
 
+console.error("ERROR INICIAL:", error);
 
-/* ============================================================
-NAVEGACIÓN
-============================================================ */
+showMessage(
+`No se pudo iniciar el dashboard: ${error.message}`,
+"error"
+);
 
-function setupNavigation() {
+} finally {
 
-const buttons = document.querySelectorAll(".nav-item");
-const pages = document.querySelectorAll(".page");
-
-buttons.forEach(button => {
-
-button.addEventListener("click", () => {
-
-const pageName = button.dataset.page;
-
-buttons.forEach(btn => {
-btn.classList.remove("active");
-});
-
-pages.forEach(page => {
-page.classList.remove("active");
-});
-
-button.classList.add("active");
-
-const targetPage =
-document.getElementById(`page-${pageName}`);
-
-if (targetPage) {
-targetPage.classList.add("active");
-}
-
-resizeCharts();
-
-});
-
-});
+showLoading(false);
 
 }
+
+});
 
 
 /* ============================================================
@@ -115,13 +78,11 @@ if (projectSelect) {
 
 projectSelect.addEventListener(
 "change",
-async event => {
+async function () {
 
-const projectId = event.target.value;
+if (!this.value) return;
 
-if (!projectId) return;
-
-await loadProject(projectId);
+await loadProject(this.value);
 
 }
 );
@@ -146,6 +107,19 @@ true
 );
 
 }
+);
+
+}
+
+
+const budgetSearch =
+document.getElementById("budgetSearch");
+
+if (budgetSearch) {
+
+budgetSearch.addEventListener(
+"input",
+renderBudgetTable
 );
 
 }
@@ -192,21 +166,10 @@ renderPendingTable
 }
 
 
-const budgetSearch =
-document.getElementById("budgetSearch");
-
-if (budgetSearch) {
-
-budgetSearch.addEventListener(
-"input",
-renderBudgetTable
-);
-
-}
-
-
 const expandCashflow =
-document.getElementById("expandCashflow");
+document.getElementById(
+"expandCashflow"
+);
 
 if (expandCashflow) {
 
@@ -236,97 +199,196 @@ collapseCashflow.addEventListener(
 
 
 /* ============================================================
-CARGAR PROJECTS.JSON
+NAVEGACIÓN
+============================================================ */
+
+function setupNavigation() {
+
+const buttons =
+document.querySelectorAll(
+"#navTabs .nav-item"
+);
+
+buttons.forEach(button => {
+
+button.addEventListener(
+"click",
+() => {
+
+buttons.forEach(item =>
+item.classList.remove("active")
+);
+
+button.classList.add("active");
+
+const pageName =
+button.dataset.page;
+
+document
+.querySelectorAll(".page")
+.forEach(page =>
+page.classList.remove("active")
+);
+
+const page =
+document.getElementById(
+`page-${pageName}`
+);
+
+if (page) {
+
+page.classList.add("active");
+
+}
+
+}
+);
+
+});
+
+}
+
+
+/* ============================================================
+PROJECTS.JSON
 ============================================================ */
 
 async function loadProjects() {
 
 try {
 
-showLoading(
-true,
+setText(
+"projectLoadStatus",
 "Cargando iniciativas..."
 );
 
 const response = await fetch(
-`${CONFIG.projectsFile}?v=${Date.now()}`
+`${PROJECTS_URL}?v=${Date.now()}`,
+{
+cache: "no-store"
+}
 );
+
 
 if (!response.ok) {
 
 throw new Error(
-`No se pudo cargar projects.json (${response.status})`
+`No se pudo abrir projects.json (${response.status})`
 );
 
 }
 
-const json = await response.json();
 
-projects = Array.isArray(json)
-? json
-: json.projects || [];
+const data = await response.json();
 
-populateProjectSelector();
 
-if (projects.length > 0) {
+if (Array.isArray(data)) {
 
-const firstProject = projects[0];
+projects = data;
 
-document.getElementById(
-"projectSelect"
-).value = firstProject.id;
+} else if (
+data &&
+Array.isArray(data.projects)
+) {
 
-await loadProject(firstProject.id);
+projects = data.projects;
 
 } else {
+
+throw new Error(
+"projects.json no contiene una lista válida."
+);
+
+}
+
+
+populateProjectSelect();
+
+
+if (projects.length === 0) {
+
+setText(
+"projectLoadStatus",
+"Sin iniciativas"
+);
 
 showMessage(
 "No hay iniciativas configuradas en projects.json.",
 "warning"
 );
 
+return;
+
 }
+
+
+const firstProject = projects[0];
+
+const select =
+document.getElementById(
+"projectSelect"
+);
+
+if (select) {
+
+select.value =
+String(firstProject.id);
+
+}
+
+
+await loadProject(
+firstProject.id
+);
+
 
 } catch (error) {
 
-console.error(error);
+console.error(
+"ERROR CARGANDO PROJECTS.JSON:",
+error
+);
+
+setText(
+"projectLoadStatus",
+"Error cargando iniciativas"
+);
 
 showMessage(
-"No fue posible cargar data/projects.json.",
+`No se pudieron cargar las iniciativas: ${error.message}`,
 "error"
 );
 
-} finally {
-
-showLoading(false);
-
 }
 
 }
 
 
-/* ============================================================
-SELECTOR DE PROYECTOS
-============================================================ */
-
-function populateProjectSelector() {
+function populateProjectSelect() {
 
 const select =
-document.getElementById("projectSelect");
+document.getElementById(
+"projectSelect"
+);
 
 if (!select) return;
 
+
 select.innerHTML = "";
+
 
 projects.forEach(project => {
 
 const option =
 document.createElement("option");
 
-option.value = project.id;
+option.value =
+String(project.id);
 
 option.textContent =
-project.name || project.id;
+project.name ||
+project.id ||
+"Iniciativa";
 
 select.appendChild(option);
 
@@ -336,7 +398,7 @@ select.appendChild(option);
 
 
 /* ============================================================
-CARGAR EXCEL
+CARGAR PROYECTO
 ============================================================ */
 
 async function loadProject(
@@ -344,26 +406,56 @@ projectId,
 forceRefresh = false
 ) {
 
-const project = projects.find(
-item => item.id === projectId
+const project =
+projects.find(
+item =>
+String(item.id) ===
+String(projectId)
 );
 
-if (!project) return;
+
+if (!project) {
+
+showMessage(
+"La iniciativa seleccionada no existe en projects.json.",
+"error"
+);
+
+return;
+
+}
 
 
 currentProject = project;
+
+resetDashboard();
+
+updateProjectHeader(project);
+
+hideMessage();
 
 
 try {
 
 showLoading(
 true,
-`Leyendo ${project.name}...`
+`Leyendo ${project.name || project.id}...`
 );
 
-hideMessage();
 
-renderHeader();;
+setText(
+"projectLoadStatus",
+"Leyendo Excel..."
+);
+
+
+if (!project.file) {
+
+throw new Error(
+"La iniciativa no tiene un archivo Excel definido."
+);
+
+}
 
 
 const separator =
@@ -378,55 +470,66 @@ forceRefresh
 : `${project.file}${separator}v=${Date.now()}`;
 
 
-console.log(
-"Cargando Excel:",
-fileUrl
-);
-
-
 const response =
-await fetch(fileUrl);
+await fetch(
+fileUrl,
+{
+cache: "no-store"
+}
+);
 
 
 if (!response.ok) {
 
 throw new Error(
-`No se pudo abrir ${project.file}. HTTP ${response.status}`
+`No se pudo abrir ${project.file} (${response.status})`
 );
 
 }
 
 
-const arrayBuffer =
+const buffer =
 await response.arrayBuffer();
 
 
-const workbook =
+if (
+typeof XLSX === "undefined"
+) {
+
+throw new Error(
+"La librería XLSX no está disponible."
+);
+
+}
+
+
+currentWorkbook =
 XLSX.read(
-arrayBuffer,
+buffer,
 {
 type: "array",
-cellDates: true,
-cellFormula: true
+cellDates: true
 }
 );
 
 
 console.log(
-"Hojas encontradas:",
-workbook.SheetNames
+"HOJAS ENCONTRADAS:",
+currentWorkbook.SheetNames
 );
 
 
-dashboardData =
-parseWorkbook(workbook);
+parseWorkbook(
+currentWorkbook
+);
 
 
 renderDashboard();
 
 
-updateLoadStatus(
-"Datos actualizados"
+setText(
+"projectLoadStatus",
+"Datos cargados"
 );
 
 
@@ -438,18 +541,17 @@ error
 );
 
 
-updateLoadStatus(
-"Error al cargar"
+setText(
+"projectLoadStatus",
+"Error al leer Excel"
 );
 
 
 showMessage(
-`No se pudo leer ${project.name}. ${error.message}`,
+`No se pudo leer ${project.name || project.id}. ${error.message}`,
 "error"
 );
 
-
-resetDashboard();
 
 } finally {
 
@@ -461,109 +563,308 @@ showLoading(false);
 
 
 /* ============================================================
-PARSEAR WORKBOOK
+CABECERA
 ============================================================ */
 
-function parseWorkbook(workbook) {
+function updateProjectHeader(project) {
 
-const budgetSheet =
-getSheetByName(
-workbook,
-CONFIG.budgetSheet
+if (!project) return;
+
+
+setText(
+"topProjectName",
+project.name ||
+project.id ||
+"Dashboard CAPEX"
 );
 
 
-const detailSheet =
-getSheetByName(
-workbook,
-CONFIG.detailSheet
+setText(
+"topProjectSubtitle",
+"Seguimiento integral de presupuesto, compras y flujo de caja."
 );
 
 
-const cashflowSheet =
-getSheetByName(
-workbook,
-CONFIG.cashflowSheet
+const opening =
+parseISODate(
+project.openingDate
 );
 
 
-if (!budgetSheet) {
+if (!opening) {
 
-throw new Error(
-'No encontré la hoja "Presupuesto vs Real".'
+setText(
+"openingDate",
+"—"
+);
+
+setText(
+"daysToOpening",
+"—"
+);
+
+setText(
+"executiveOpeningDate",
+"—"
+);
+
+setText(
+"executiveDays",
+"—"
+);
+
+return;
+
+}
+
+
+const formatted =
+formatDate(opening);
+
+
+setText(
+"openingDate",
+formatted
+);
+
+setText(
+"executiveOpeningDate",
+formatted
+);
+
+
+const today = new Date();
+
+today.setHours(0, 0, 0, 0);
+
+opening.setHours(0, 0, 0, 0);
+
+
+const days =
+Math.ceil(
+(
+opening.getTime() -
+today.getTime()
+) /
+86400000
+);
+
+
+setText(
+"daysToOpening",
+days
+);
+
+setText(
+"executiveDays",
+days
 );
 
 }
 
 
-if (!detailSheet) {
+/*
+Alias por compatibilidad.
+Si alguna parte vieja del código llama renderHeader,
+seguirá funcionando.
+*/
 
-throw new Error(
-'No encontré la hoja "BD Plan Detallado".'
-);
+function renderHeader(project = currentProject) {
 
-}
-
-
-if (!cashflowSheet) {
-
-throw new Error(
-'No encontré la hoja "Flujo de Caja".'
-);
-
-}
-
-
-const budget =
-parseBudgetSheet(budgetSheet);
-
-
-const purchases =
-parseDetailSheet(detailSheet);
-
-
-const cashflow =
-parseCashflowSheet(cashflowSheet);
-
-
-return {
-
-budget,
-
-purchases,
-
-cashflow
-
-};
+updateProjectHeader(project);
 
 }
 
 
 /* ============================================================
-BUSCAR HOJA SIN PROBLEMAS DE MAYÚSCULAS/ESPACIOS
+LEER WORKBOOK
 ============================================================ */
 
-function getSheetByName(
+function parseWorkbook(workbook) {
+
+financialData = {
+budget: 0,
+real: 0,
+difference: 0,
+rows: []
+};
+
+
+purchaseData = [];
+
+
+cashflowData = {
+periods: [],
+rows: []
+};
+
+
+const financialSheet =
+findSheet(
 workbook,
-requestedName
-) {
-
-const normalizedRequested =
-normalizeText(requestedName);
-
-
-const foundName =
-workbook.SheetNames.find(
-sheetName =>
-normalizeText(sheetName) ===
-normalizedRequested
+"Presupuesto vs Real"
 );
 
 
-if (!foundName) return null;
+const purchaseSheet =
+findSheet(
+workbook,
+"BD Plan Detallado"
+);
 
 
-return workbook.Sheets[foundName];
+const cashflowSheet =
+findSheet(
+workbook,
+"Flujo de Caja"
+);
+
+
+const missing = [];
+
+
+if (financialSheet) {
+
+try {
+
+financialData =
+parseFinancialSheet(
+financialSheet
+);
+
+} catch (error) {
+
+console.error(
+"ERROR PRESUPUESTO VS REAL:",
+error
+);
+
+}
+
+} else {
+
+missing.push(
+"Presupuesto vs Real"
+);
+
+}
+
+
+if (purchaseSheet) {
+
+try {
+
+purchaseData =
+parsePurchaseSheet(
+purchaseSheet
+);
+
+} catch (error) {
+
+console.error(
+"ERROR BD PLAN DETALLADO:",
+error
+);
+
+}
+
+} else {
+
+missing.push(
+"BD Plan Detallado"
+);
+
+}
+
+
+if (cashflowSheet) {
+
+try {
+
+cashflowData =
+parseCashflowSheet(
+cashflowSheet
+);
+
+} catch (error) {
+
+console.error(
+"ERROR FLUJO DE CAJA:",
+error
+);
+
+}
+
+} else {
+
+missing.push(
+"Flujo de Caja"
+);
+
+}
+
+
+if (missing.length > 0) {
+
+showMessage(
+`El Excel no contiene: ${missing.join(", ")}.`,
+"warning"
+);
+
+}
+
+}
+
+
+/* ============================================================
+BUSCAR HOJA
+============================================================ */
+
+function findSheet(
+workbook,
+targetName
+) {
+
+const target =
+normalizeText(targetName);
+
+
+const sheetName =
+workbook.SheetNames.find(
+name =>
+normalizeText(name) ===
+target
+);
+
+
+if (!sheetName) {
+
+return null;
+
+}
+
+
+return workbook.Sheets[
+sheetName
+];
+
+}
+
+
+/* ============================================================
+MATRIZ DE EXCEL
+============================================================ */
+
+function sheetToMatrix(sheet) {
+
+return XLSX.utils.sheet_to_json(
+sheet,
+{
+header: 1,
+defval: null,
+raw: true
+}
+);
 
 }
 
@@ -572,333 +873,662 @@ return workbook.Sheets[foundName];
 PRESUPUESTO VS REAL
 ============================================================ */
 
-function parseBudgetSheet(sheet) {
+function parseFinancialSheet(sheet) {
 
-const rows =
-XLSX.utils.sheet_to_json(
-sheet,
-{
-header: 1,
-defval: null,
-raw: true
+const matrix =
+sheetToMatrix(sheet);
+
+
+const result = {
+budget: 0,
+real: 0,
+difference: 0,
+rows: []
+};
+
+
+if (!matrix.length) {
+
+return result;
+
 }
-);
 
 
-let totalBudget = 0;
+/* ----------------------------------------------------------
+TOTAL GENERAL
+---------------------------------------------------------- */
 
-let totalReal = 0;
+let totalRowIndex = -1;
 
-let totalDifference = 0;
-
-let totalRowFound = false;
-
-
-/* --------------------------------------------------------
-TOTAL GENERAL ESTIMADO
---------------------------------------------------------- */
 
 for (
 let r = 0;
-r < Math.min(rows.length, 40);
+r < matrix.length;
 r++
 ) {
 
-const row = rows[r] || [];
-
-const joined =
+const text =
 normalizeText(
-row
-.map(value => value ?? "")
+matrix[r]
+.filter(value => value != null)
 .join(" ")
 );
 
 
 if (
-joined.includes(
+text.includes(
 "total general estimado"
 )
 ) {
 
-const numbers =
-extractNumbers(row);
+totalRowIndex = r;
+break;
+
+}
+
+}
+
+
+let totalInfo = null;
+
+
+if (totalRowIndex >= 0) {
+
+totalInfo =
+findFinancialAmountsNearRow(
+matrix,
+totalRowIndex
+);
+
+}
+
+
+if (totalInfo) {
+
+result.budget =
+totalInfo.budget;
+
+result.real =
+totalInfo.real;
+
+result.difference =
+totalInfo.difference;
+
+}
+
+
+/* ----------------------------------------------------------
+COLUMNAS PRESUPUESTO / REAL / DIFERENCIA
+---------------------------------------------------------- */
+
+const columns =
+detectFinancialColumns(
+matrix,
+totalRowIndex
+);
+
+
+/* ----------------------------------------------------------
+RESUMEN DE PARTIDAS
+---------------------------------------------------------- */
+
+let summaryIndex = -1;
+
+
+for (
+let r = 0;
+r < matrix.length;
+r++
+) {
+
+const rowText =
+normalizeText(
+matrix[r]
+.filter(value => value != null)
+.join(" ")
+);
+
+
+if (
+rowText.includes(
+"resumen de partidas"
+)
+) {
+
+summaryIndex = r;
+break;
+
+}
+
+}
+
+
+const start =
+summaryIndex >= 0
+? summaryIndex + 1
+: 0;
+
+
+for (
+let r = start;
+r < matrix.length;
+r++
+) {
+
+const row = matrix[r];
+
+
+if (!row) continue;
+
+
+const label =
+getFinancialRowLabel(row);
+
+
+if (!label) continue;
+
+
+const normalized =
+normalizeText(label);
+
+
+if (
+normalized.includes(
+"total general estimado"
+) ||
+normalized.includes(
+"resumen de partidas"
+)
+) {
+
+continue;
+
+}
+
+
+const amounts =
+extractFinancialRowAmounts(
+row,
+columns
+);
+
+
+if (
+amounts.budget === 0 &&
+amounts.real === 0
+) {
+
+continue;
+
+}
+
+
+result.rows.push({
+name: label,
+budget: amounts.budget,
+real: amounts.real,
+difference:
+amounts.difference
+});
+
+}
 
 
 /*
-En la hoja:
-Presupuestado | Real | Diferencia
-
-Tomamos los últimos tres valores
-numéricos significativos de esa fila.
+Si el total general no pudo detectarse,
+usamos únicamente las categorías principales,
+evitando sumar todas las subpartidas.
 */
+
+if (
+result.budget === 0 &&
+result.real === 0
+) {
+
+const major =
+result.rows.filter(
+row =>
+isMajorFinancialCategory(
+row.name
+)
+);
+
+
+if (major.length) {
+
+result.budget =
+major.reduce(
+(sum, row) =>
+sum + row.budget,
+0
+);
+
+result.real =
+major.reduce(
+(sum, row) =>
+sum + row.real,
+0
+);
+
+result.difference =
+result.budget -
+result.real;
+
+}
+
+}
+
+
+if (
+!Number.isFinite(
+result.difference
+)
+) {
+
+result.difference =
+result.budget -
+result.real;
+
+}
+
+
+if (
+result.difference === 0 &&
+result.budget !== result.real
+) {
+
+result.difference =
+result.budget -
+result.real;
+
+}
+
+
+return result;
+
+}
+
+
+/* ============================================================
+DETECTAR TOTALES FINANCIEROS
+============================================================ */
+
+function findFinancialAmountsNearRow(
+matrix,
+index
+) {
+
+const candidateRows = [
+index,
+index + 1,
+index - 1,
+index + 2
+];
+
+
+for (
+const rowIndex of candidateRows
+) {
+
+if (
+rowIndex < 0 ||
+rowIndex >= matrix.length
+) {
+
+continue;
+
+}
+
+
+const row =
+matrix[rowIndex];
+
+
+const numbers =
+row
+.map(
+(value, column) => ({
+value:
+toNumber(value),
+column
+})
+)
+.filter(
+item =>
+Number.isFinite(
+item.value
+) &&
+Math.abs(
+item.value
+) > 100
+);
+
+
+if (numbers.length >= 3) {
+
+const lastThree =
+numbers.slice(-3);
+
+
+return {
+budget:
+lastThree[0].value,
+
+real:
+lastThree[1].value,
+
+difference:
+lastThree[2].value,
+
+columns:
+lastThree.map(
+item => item.column
+)
+};
+
+}
+
+
+if (numbers.length === 2) {
+
+return {
+budget:
+numbers[0].value,
+
+real:
+numbers[1].value,
+
+difference:
+numbers[0].value -
+numbers[1].value,
+
+columns: [
+numbers[0].column,
+numbers[1].column,
+null
+]
+};
+
+}
+
+}
+
+
+return null;
+
+}
+
+
+/* ============================================================
+COLUMNAS FINANCIERAS
+============================================================ */
+
+function detectFinancialColumns(
+matrix,
+totalRowIndex
+) {
+
+let budgetColumn = null;
+let realColumn = null;
+let differenceColumn = null;
+
+
+const maxRows =
+Math.min(
+matrix.length,
+Math.max(
+20,
+totalRowIndex + 5
+)
+);
+
+
+for (
+let r = 0;
+r < maxRows;
+r++
+) {
+
+const row =
+matrix[r] || [];
+
+
+row.forEach(
+(value, column) => {
+
+const text =
+normalizeText(value);
+
+
+if (
+text === "presupuestado" ||
+text === "presupuesto"
+) {
+
+budgetColumn = column;
+
+}
+
+
+if (
+text === "real"
+) {
+
+realColumn = column;
+
+}
+
+
+if (
+text === "diferencia"
+) {
+
+differenceColumn =
+column;
+
+}
+
+}
+);
+
+}
+
+
+if (
+budgetColumn == null ||
+realColumn == null
+) {
+
+const info =
+totalRowIndex >= 0
+? findFinancialAmountsNearRow(
+matrix,
+totalRowIndex
+)
+: null;
+
+
+if (
+info &&
+info.columns
+) {
+
+budgetColumn =
+info.columns[0];
+
+realColumn =
+info.columns[1];
+
+differenceColumn =
+info.columns[2];
+
+}
+
+}
+
+
+return {
+budgetColumn,
+realColumn,
+differenceColumn
+};
+
+}
+
+
+/* ============================================================
+LABEL FINANCIERO
+============================================================ */
+
+function getFinancialRowLabel(row) {
+
+for (
+let c = 0;
+c < Math.min(
+row.length,
+6
+);
+c++
+) {
+
+const value = row[c];
+
+
+if (
+typeof value === "string" &&
+value.trim()
+) {
+
+const text =
+value.trim();
+
+
+if (
+normalizeText(text) !==
+"usd"
+) {
+
+return text;
+
+}
+
+}
+
+}
+
+
+return "";
+
+}
+
+
+/* ============================================================
+VALORES FINANCIEROS POR FILA
+============================================================ */
+
+function extractFinancialRowAmounts(
+row,
+columns
+) {
+
+let budget = 0;
+let real = 0;
+let difference = 0;
+
+
+if (
+columns.budgetColumn != null
+) {
+
+budget =
+toNumber(
+row[
+columns.budgetColumn
+]
+);
+
+}
+
+
+if (
+columns.realColumn != null
+) {
+
+real =
+toNumber(
+row[
+columns.realColumn
+]
+);
+
+}
+
+
+if (
+columns.differenceColumn != null
+) {
+
+difference =
+toNumber(
+row[
+columns.differenceColumn
+]
+);
+
+}
+
+
+/*
+Algunos archivos tienen una columna
+separada con "USD$".
+Si las columnas detectadas no tienen números,
+buscamos los últimos montos de la fila.
+*/
+
+if (
+budget === 0 &&
+real === 0
+) {
+
+const numbers =
+row
+.map(toNumber)
+.filter(
+value =>
+Number.isFinite(value) &&
+Math.abs(value) > 0
+);
+
 
 if (numbers.length >= 3) {
 
 const values =
 numbers.slice(-3);
 
+budget = values[0];
+real = values[1];
+difference = values[2];
 
-totalBudget =
-values[0] || 0;
-
-
-totalReal =
-values[1] || 0;
-
-
-totalDifference =
-values[2] || 0;
-
-
-totalRowFound = true;
-
-}
-
-
-break;
-
-}
-
-}
-
-
-/* --------------------------------------------------------
-BUSCAR ENCABEZADO DE PARTIDAS
---------------------------------------------------------- */
-
-let headerRowIndex = -1;
-
-let budgetColumn = -1;
-
-let realColumn = -1;
-
-let differenceColumn = -1;
-
-
-for (
-let r = 0;
-r < Math.min(rows.length, 80);
-r++
+} else if (
+numbers.length >= 2
 ) {
 
-const row = rows[r] || [];
+const values =
+numbers.slice(-2);
 
-
-const normalized =
-row.map(normalizeText);
-
-
-const hasBudget =
-normalized.some(
-value =>
-value.includes(
-"presupuestado"
-)
-);
-
-
-const hasReal =
-normalized.some(
-value =>
-value === "real" ||
-value.includes(
-"real"
-)
-);
-
-
-const hasDifference =
-normalized.some(
-value =>
-value.includes(
-"diferencia"
-)
-);
-
-
-if (
-hasBudget &&
-hasReal &&
-hasDifference
-) {
-
-headerRowIndex = r;
-
-
-budgetColumn =
-normalized.findIndex(
-value =>
-value.includes(
-"presupuestado"
-)
-);
-
-
-realColumn =
-normalized.findIndex(
-value =>
-value === "real" ||
-value.includes(
-"real"
-)
-);
-
-
-differenceColumn =
-normalized.findIndex(
-value =>
-value.includes(
-"diferencia"
-)
-);
-
-
-/*
-Preferimos la última aparición,
-porque la hoja puede tener etiquetas
-repetidas.
-*/
-
-budgetColumn =
-findLastColumnContaining(
-normalized,
-"presupuestado"
-);
-
-
-realColumn =
-findLastColumnContaining(
-normalized,
-"real"
-);
-
-
-differenceColumn =
-findLastColumnContaining(
-normalized,
-"diferencia"
-);
-
-
-break;
+budget = values[0];
+real = values[1];
+difference =
+budget - real;
 
 }
 
 }
-
-
-/* --------------------------------------------------------
-PARTIDAS
---------------------------------------------------------- */
-
-const categories = [];
-
-
-if (headerRowIndex >= 0) {
-
-for (
-let r = headerRowIndex + 1;
-r < rows.length;
-r++
-) {
-
-const row = rows[r] || [];
-
-
-const firstValues =
-row
-.slice(0, 4)
-.map(value =>
-cleanString(value)
-);
-
-
-let code = "";
-
-let description = "";
-
-
-/*
-En la hoja normalmente:
-A = código
-B = descripción
-
-Pero se busca de forma flexible.
-*/
-
-for (
-let c = 0;
-c < Math.min(4, row.length);
-c++
-) {
-
-const value =
-cleanString(row[c]);
-
-
-if (!value) continue;
-
-
-if (
-!code &&
-isPartCode(value)
-) {
-
-code = value;
-
-continue;
-
-}
-
-
-if (
-value &&
-!isCurrencyLabel(value) &&
-!isPartCode(value)
-) {
-
-if (!description) {
-
-description = value;
-
-}
-
-}
-
-}
-
-
-if (
-!code &&
-!description
-) {
-
-continue;
-
-}
-
-
-const budget =
-toNumber(
-row[budgetColumn]
-);
-
-
-const real =
-toNumber(
-row[realColumn]
-);
-
-
-let difference =
-toNumber(
-row[differenceColumn]
-);
 
 
 if (
 difference === 0 &&
-(budget !== 0 || real !== 0)
+budget !== real
 ) {
 
 difference =
@@ -907,147 +1537,32 @@ budget - real;
 }
 
 
-/*
-Ignorar filas totalmente vacías
-financieramente.
-*/
+return {
+budget,
+real,
+difference
+};
 
-if (
-budget === 0 &&
-real === 0 &&
-difference === 0
+}
+
+
+/* ============================================================
+CATEGORÍA FINANCIERA PRINCIPAL
+============================================================ */
+
+function isMajorFinancialCategory(
+name
 ) {
 
-continue;
-
-}
-
-
-const name =
-code && description
-? `${code} ${description}`
-: code || description;
+const text =
+normalizeText(name);
 
 
-categories.push({
-
-code,
-
-name,
-
-budget,
-
-real,
-
-difference,
-
-execution:
-budget !== 0
-? real / budget
-: 0
-
-});
-
-}
-
-}
-
-
-/*
-Si no logramos encontrar el total,
-usamos los datos encontrados como
-último recurso.
-*/
-
-if (!totalRowFound) {
-
-const rootRows =
-categories.filter(
-category =>
-isMainCategory(
-category.code
-)
-);
-
-
-const source =
-rootRows.length
-? rootRows
-: categories;
-
-
-totalBudget =
-source.reduce(
-(sum, item) =>
-sum + item.budget,
-0
-);
-
-
-totalReal =
-source.reduce(
-(sum, item) =>
-sum + item.real,
-0
-);
-
-
-totalDifference =
-totalBudget - totalReal;
-
-}
-
-
-/*
-La diferencia positiva es ahorro.
-Convertimos únicamente el ahorro
-a RD$ con tasa fija 60.
-*/
-
-const savingsUSD =
-totalDifference > 0
-? totalDifference
-: 0;
-
-
-const overrunUSD =
-totalDifference < 0
-? Math.abs(totalDifference)
-: 0;
-
-
-const savingsDOP =
-savingsUSD * EXCHANGE_RATE;
-
-
-const overrunDOP =
-overrunUSD * EXCHANGE_RATE;
-
-
-return {
-
-totalBudget,
-
-totalReal,
-
-totalDifference,
-
-execution:
-totalBudget !== 0
-? totalReal / totalBudget
-: 0,
-
-savingsUSD,
-
-savingsDOP,
-
-overrunUSD,
-
-overrunDOP,
-
-categories
-
-};
+return [
+"edificacion",
+"equipamiento",
+"terreno"
+].includes(text);
 
 }
 
@@ -1056,126 +1571,154 @@ categories
 BD PLAN DETALLADO
 ============================================================ */
 
-function parseDetailSheet(sheet) {
+function parsePurchaseSheet(sheet) {
 
-const rows =
-XLSX.utils.sheet_to_json(
-sheet,
-{
-header: 1,
-defval: null,
-raw: true
-}
-);
+const matrix =
+sheetToMatrix(sheet);
 
 
-let headerRowIndex = -1;
+if (!matrix.length) {
 
-
-/* --------------------------------------------------------
-ENCONTRAR ENCABEZADOS
---------------------------------------------------------- */
-
-for (
-let r = 0;
-r < Math.min(rows.length, 30);
-r++
-) {
-
-const normalized =
-(rows[r] || [])
-.map(normalizeText);
-
-
-const hasPartida =
-normalized.some(
-value =>
-value.includes(
-"partida"
-)
-);
-
-
-const hasOrder =
-normalized.some(
-value =>
-value.includes(
-"orden de compra"
-)
-);
-
-
-const hasItem =
-normalized.some(
-value =>
-value === "item" ||
-value.includes(
-"item"
-)
-);
-
-
-if (
-hasPartida &&
-hasOrder &&
-hasItem
-) {
-
-headerRowIndex = r;
-
-break;
-
-}
+return [];
 
 }
 
 
-if (headerRowIndex < 0) {
+const headerIndex =
+findPurchaseHeaderRow(
+matrix
+);
+
+
+if (headerIndex < 0) {
 
 console.warn(
-"No se encontraron encabezados de BD Plan Detallado."
+"No se encontró encabezado de BD Plan Detallado."
 );
 
-
-return createEmptyPurchaseData();
+return [];
 
 }
 
 
 const headers =
-makeUniqueHeaders(
-rows[headerRowIndex]
-);
+matrix[headerIndex]
+.map(normalizeText);
 
 
-const map =
-createHeaderMap(headers);
+const columns = {
+
+partida:
+findColumn(
+headers,
+[
+"partidas",
+"partida"
+]
+),
+
+item:
+findColumn(
+headers,
+[
+"item"
+]
+),
+
+order:
+findColumn(
+headers,
+[
+"orden de compra"
+]
+),
+
+date:
+findColumn(
+headers,
+[
+"fecha"
+]
+),
+
+quantity:
+findColumn(
+headers,
+[
+"cant",
+"cantidad"
+]
+),
+
+netDOP:
+findColumnIncludes(
+headers,
+[
+"valor neto",
+"dop"
+]
+),
+
+budgetDOP:
+findColumnIncludes(
+headers,
+[
+"ppto",
+"orden interna",
+"dop"
+]
+),
+
+comment:
+findColumn(
+headers,
+[
+"comentario",
+"observacion",
+"observaciones"
+]
+)
+
+};
 
 
-console.log(
-"Columnas BD Plan Detallado:",
-map
-);
-
-
-const records = [];
+const result = [];
 
 
 for (
-let r = headerRowIndex + 1;
-r < rows.length;
+let r = headerIndex + 1;
+r < matrix.length;
 r++
 ) {
 
-const row = rows[r] || [];
+const row =
+matrix[r];
 
+
+if (!row) continue;
+
+
+const orderValue =
+getCell(
+row,
+columns.order
+);
+
+
+const status =
+classifyPurchaseStatus(
+orderValue
+);
+
+
+/*
+PLAN y valores desconocidos
+no entran al general.
+*/
 
 if (
-row.every(
-value =>
-value === null ||
-value === ""
-)
+status === "ignore" ||
+status === "other"
 ) {
 
 continue;
@@ -1184,196 +1727,80 @@ continue;
 
 
 const partida =
-getMappedValue(
+cleanText(
+getCell(
 row,
-map,
-[
-"partidas",
-"partida"
-]
+columns.partida
+)
 );
 
 
 const item =
-getMappedValue(
+cleanText(
+getCell(
 row,
-map,
-[
-"item"
-]
+columns.item
+)
 );
-
-
-const orderRaw =
-getMappedValue(
-row,
-map,
-[
-"orden de compra",
-"orden compra",
-"oc"
-]
-);
-
-
-const order =
-cleanString(orderRaw);
-
-
-const normalizedOrder =
-normalizeText(order);
-
-
-/*
-REGLA PRINCIPAL
-*/
-
-let status = "ignored";
 
 
 if (
-normalizedOrder.includes(
-"pendiente de compra"
-)
+!partida &&
+!item &&
+!orderValue
 ) {
-
-status = "pending";
-
-}
-
-else if (
-normalizedOrder === "stock" ||
-normalizedOrder.includes(
-"stock"
-)
-) {
-
-status = "stock";
-
-}
-
-else if (
-normalizedOrder === "plan" ||
-normalizedOrder.includes(
-"plan"
-)
-) {
-
-status = "ignored";
-
-}
-
-else if (
-isValidPurchaseOrder(order)
-) {
-
-status = "po";
-
-}
-
-else {
-
-status = "ignored";
-
-}
-
-
-/*
-Ignoramos PLAN y cualquier
-otro estado no utilizado.
-*/
-
-if (status === "ignored") {
 
 continue;
 
 }
 
 
-const date =
-getMappedValue(
+result.push({
+
+partida,
+
+item,
+
+order:
+cleanText(orderValue),
+
+date:
+getCell(
 row,
-map,
-[
-"fecha"
-]
-);
+columns.date
+),
 
-
-const quantity =
+quantity:
 toNumber(
-getMappedValue(
+getCell(
 row,
-map,
-[
-"cant",
-"cantidad"
-]
+columns.quantity
 )
-);
+),
 
-
-const netValue =
+netDOP:
 toNumber(
-getMappedValue(
+getCell(
 row,
-map,
-[
-"valor neto dop",
-"valor neto [dop]",
-"valor neto"
-]
+columns.netDOP
 )
-);
+),
 
-
-const budgetDOP =
+budgetDOP:
 toNumber(
-getMappedValue(
+getCell(
 row,
-map,
-[
-"ppto orden interna dop",
-"ppto. orden interna [dop]",
-"ppto orden interna [dop]",
-"presupuesto dop"
-]
+columns.budgetDOP
 )
-);
+),
 
-
-const comment =
-cleanString(
-getMappedValue(
+comment:
+cleanText(
+getCell(
 row,
-map,
-[
-"comentario",
-"comentarios"
-]
+columns.comment
 )
-);
-
-
-records.push({
-
-partida:
-cleanString(partida),
-
-item:
-cleanString(item),
-
-order,
-
-date,
-
-quantity,
-
-netValue,
-
-budgetDOP,
-
-comment,
+),
 
 status
 
@@ -1382,67 +1809,156 @@ status
 }
 
 
-const poRecords =
-records.filter(
-record =>
-record.status === "po"
+return result;
+
+}
+
+
+/* ============================================================
+ENCONTRAR ENCABEZADO BD
+============================================================ */
+
+function findPurchaseHeaderRow(
+matrix
+) {
+
+const limit =
+Math.min(
+matrix.length,
+30
 );
 
 
-const pendingRecords =
-records.filter(
-record =>
-record.status === "pending"
+for (
+let r = 0;
+r < limit;
+r++
+) {
+
+const values =
+(matrix[r] || [])
+.map(normalizeText);
+
+
+const hasOrder =
+values.some(
+value =>
+value.includes(
+"orden de compra"
+)
 );
 
 
-const stockRecords =
-records.filter(
-record =>
-record.status === "stock"
+const hasItem =
+values.some(
+value =>
+value === "item" ||
+value.includes("item")
 );
 
 
-const poValue =
-poRecords.reduce(
-(sum, record) =>
-sum + record.netValue,
-0
+const hasPartida =
+values.some(
+value =>
+value.includes(
+"partida"
+)
 );
 
 
-const pendingValue =
-pendingRecords.reduce(
-(sum, record) =>
-sum + record.budgetDOP,
-0
-);
+if (
+hasOrder &&
+(
+hasItem ||
+hasPartida
+)
+) {
+
+return r;
+
+}
+
+}
 
 
-return {
+return -1;
 
-records,
+}
 
-poRecords,
 
-pendingRecords,
+/* ============================================================
+ESTADO DE COMPRA
+============================================================ */
 
-stockRecords,
+function classifyPurchaseStatus(
+value
+) {
 
-poCount:
-poRecords.length,
+const raw =
+cleanText(value);
 
-pendingCount:
-pendingRecords.length,
 
-stockCount:
-stockRecords.length,
+const text =
+normalizeText(raw);
 
-poValue,
 
-pendingValue
+if (!text) {
 
-};
+return "other";
+
+}
+
+
+if (
+text.includes(
+"pendiente de compra"
+) ||
+text === "pendiente"
+) {
+
+return "pending";
+
+}
+
+
+if (
+text === "stock" ||
+text.includes("stock")
+) {
+
+return "stock";
+
+}
+
+
+if (
+text === "plan" ||
+text.includes("plan")
+) {
+
+return "ignore";
+
+}
+
+
+/*
+Orden de compra real:
+se aceptan números largos aunque Excel
+los haya leído como número.
+*/
+
+const digits =
+raw.replace(/\D/g, "");
+
+
+if (digits.length >= 6) {
+
+return "po";
+
+}
+
+
+return "other";
 
 }
 
@@ -1453,337 +1969,76 @@ FLUJO DE CAJA
 
 function parseCashflowSheet(sheet) {
 
-const rows =
-XLSX.utils.sheet_to_json(
-sheet,
-{
-header: 1,
-defval: null,
-raw: true
+const matrix =
+sheetToMatrix(sheet);
+
+
+const result = {
+periods: [],
+rows: []
+};
+
+
+if (!matrix.length) {
+
+return result;
+
 }
+
+
+const periodInfo =
+detectCashflowPeriods(
+matrix
 );
 
 
-/*
-El Flujo de Caja no se convierte a USD.
-Se mantiene en RD$.
-
-Buscamos una fila con varios períodos.
-Puede venir como:
-P1 P2 P3...
-o
-1 2 3...
-*/
-
-
-let periodRowIndex = -1;
-
-let periodColumns = [];
-
-
-for (
-let r = 0;
-r < Math.min(rows.length, 40);
-r++
-) {
-
-const row = rows[r] || [];
-
-const candidates = [];
-
-
-row.forEach(
-(value, columnIndex) => {
-
-const period =
-parsePeriodNumber(value);
-
-
-if (
-period !== null
-) {
-
-candidates.push({
-
-columnIndex,
-
-period
-
-});
-
-}
-
-}
-);
-
-
-/*
-Evitar confundir códigos de partidas
-con la fila de períodos.
-*/
-
-if (
-candidates.length >= 4
-) {
-
-const periods =
-candidates.map(
-item => item.period
-);
-
-
-const unique =
-new Set(periods);
-
-
-if (
-unique.size >= 4
-) {
-
-periodRowIndex = r;
-
-periodColumns =
-candidates;
-
-break;
-
-}
-
-}
-
-}
-
-
-if (
-periodRowIndex < 0 ||
-periodColumns.length === 0
-) {
+if (!periodInfo) {
 
 console.warn(
-"No se identificaron períodos en Flujo de Caja."
+"No se detectaron períodos en Flujo de Caja."
 );
 
-
-return {
-
-periods: [],
-
-rows: [],
-
-groups: [],
-
-totals: [],
-
-grandTotal: 0
-
-};
+return result;
 
 }
 
 
-/*
-Buscar nombres de meses cerca
-de la fila de períodos.
-*/
+result.periods =
+periodInfo.periods;
 
-const periods =
-periodColumns.map(
-item => {
 
-let label = "";
+const firstPeriodColumn =
+periodInfo.periods[0].column;
+
+
+let lastParent = null;
 
 
 for (
-let r =
-Math.max(
-0,
-periodRowIndex - 3
-);
-r <=
-Math.min(
-rows.length - 1,
-periodRowIndex + 3
-);
+let r = periodInfo.rowIndex + 1;
+r < matrix.length;
 r++
 ) {
 
-if (
-r === periodRowIndex
-) {
-
-continue;
-
-}
+const row =
+matrix[r] || [];
 
 
-const possible =
-cleanString(
-rows[r]?.[
-item.columnIndex
-]
+const label =
+getCashflowLabel(
+row,
+firstPeriodColumn
 );
 
 
-if (
-isMonthName(possible)
-) {
-
-label = possible;
-
-break;
-
-}
-
-}
-
-
-if (!label) {
-
-label =
-periodToMonthLabel(
-item.period
-);
-
-}
-
-
-return {
-
-period:
-item.period,
-
-columnIndex:
-item.columnIndex,
-
-label
-
-};
-
-}
-);
-
-
-/*
-Encontrar columna donde están
-las partidas.
-*/
-
-let partidaColumn = 0;
-
-
-for (
-let c = 0;
-c <
-Math.min(
-periodColumns[0].columnIndex,
-8
-);
-c++
-) {
-
-let score = 0;
-
-
-for (
-let r = periodRowIndex + 1;
-r <
-Math.min(
-rows.length,
-periodRowIndex + 80
-);
-r++
-) {
-
-const value =
-cleanString(
-rows[r]?.[c]
-);
-
-
-if (
-value &&
-(
-isPartCode(value) ||
-value.length > 5
-)
-) {
-
-score++;
-
-}
-
-}
-
-
-if (score > 3) {
-
-partidaColumn = c;
-
-break;
-
-}
-
-}
-
-
-const parsedRows = [];
-
-
-for (
-let r = periodRowIndex + 1;
-r < rows.length;
-r++
-) {
-
-const row = rows[r] || [];
-
-
-let label =
-cleanString(
-row[partidaColumn]
-);
-
-
-/*
-Si la descripción está en la
-columna siguiente, unirla.
-*/
-
-const nextValue =
-cleanString(
-row[
-partidaColumn + 1
-]
-);
-
-
-if (
-label &&
-isPartCode(label) &&
-nextValue &&
-!isNumericLike(nextValue)
-) {
-
-label =
-`${label} ${nextValue}`;
-
-}
-
-
-if (!label) {
-
-continue;
-
-}
+if (!label) continue;
 
 
 const values =
-periods.map(
+periodInfo.periods.map(
 period =>
 toNumber(
-row[
-period.columnIndex
-]
+row[period.column]
 )
 );
 
@@ -1803,230 +2058,271 @@ continue;
 }
 
 
-const code =
-extractPartCode(label);
+const isParent =
+isCashflowParent(label);
 
 
-parsedRows.push({
+if (isParent) {
+
+lastParent = label;
+
+}
+
+
+result.rows.push({
+
+id:
+`cf-${r}`,
 
 label,
-
-code,
 
 values,
 
 total,
 
-rowIndex: r
+isParent,
+
+parent:
+isParent
+? null
+: lastParent
 
 });
 
 }
 
 
-/*
-Crear jerarquía desplegable.
-*/
-
-const groups =
-buildCashflowGroups(
-parsedRows,
-periods.length
-);
-
-
-const totals =
-new Array(
-periods.length
-).fill(0);
-
-
-parsedRows.forEach(
-row => {
-
-row.values.forEach(
-(value, index) => {
-
-totals[index] +=
-value;
-
-}
-);
-
-}
-);
-
-
-const grandTotal =
-totals.reduce(
-(sum, value) =>
-sum + value,
-0
-);
-
-
-return {
-
-periods,
-
-rows: parsedRows,
-
-groups,
-
-totals,
-
-grandTotal
-
-};
+return result;
 
 }
 
 
 /* ============================================================
-AGRUPAR FLUJO DE CAJA
+PERÍODOS FLUJO
 ============================================================ */
 
-function buildCashflowGroups(
-rows,
-periodCount
+function detectCashflowPeriods(
+matrix
 ) {
 
-const groups = [];
+const limit =
+Math.min(
+matrix.length,
+30
+);
 
-let currentGroup = null;
+
+for (
+let r = 0;
+r < limit;
+r++
+) {
+
+const row =
+matrix[r] || [];
 
 
-rows.forEach(
-row => {
+const candidates = [];
+
+
+for (
+let c = 0;
+c < row.length;
+c++
+) {
+
+const value =
+toNumber(row[c]);
+
 
 if (
-isMainCategory(
-row.code
+Number.isInteger(value) &&
+value >= 1 &&
+value <= 60
+) {
+
+candidates.push({
+period: value,
+column: c
+});
+
+}
+
+}
+
+
+if (
+candidates.length >= 3
+) {
+
+const sequential =
+candidates.filter(
+(item, index) => {
+
+if (index === 0) {
+
+return true;
+
+}
+
+return (
+item.period ===
+candidates[
+index - 1
+].period + 1
+);
+
+}
+);
+
+
+if (
+sequential.length >= 3
+) {
+
+return {
+
+rowIndex: r,
+
+periods:
+candidates.map(
+item => ({
+...item,
+label:
+periodToMonth(
+item.period
 )
+})
+)
+
+};
+
+}
+
+}
+
+}
+
+
+return null;
+
+}
+
+
+/* ============================================================
+LABEL FLUJO
+============================================================ */
+
+function getCashflowLabel(
+row,
+firstPeriodColumn
 ) {
 
-currentGroup = {
-
-id:
-`cashflow-group-${groups.length}`,
-
-label:
-row.label,
-
-code:
-row.code,
-
-values:
-[...row.values],
-
-total:
-row.total,
-
-children: []
-
-};
+const parts = [];
 
 
-groups.push(
-currentGroup
-);
+for (
+let c = 0;
+c < firstPeriodColumn;
+c++
+) {
 
-}
+const value =
+cleanText(row[c]);
 
-else {
-
-if (!currentGroup) {
-
-currentGroup = {
-
-id:
-`cashflow-group-${groups.length}`,
-
-label:
-"Otras partidas",
-
-code:
-"",
-
-values:
-new Array(
-periodCount
-).fill(0),
-
-total: 0,
-
-children: []
-
-};
-
-
-groups.push(
-currentGroup
-);
-
-}
-
-
-currentGroup.children.push(
-row
-);
-
-}
-
-}
-);
-
-
-/*
-Si una fila principal no contiene
-realmente el subtotal, calcularlo
-desde sus hijos.
-*/
-
-groups.forEach(
-group => {
 
 if (
-group.children.length > 0 &&
-group.total === 0
+value &&
+!/^usd\\$?$/i.test(value) &&
+!/^rd\\$?$/i.test(value)
 ) {
 
-group.values =
-new Array(
-periodCount
-).fill(0);
-
-
-group.children.forEach(
-child => {
-
-child.values.forEach(
-(value, index) => {
-
-group.values[index] +=
-value;
-
-}
-);
-
-}
-);
-
-
-group.total =
-group.values.reduce(
-(sum, value) =>
-sum + value,
-0
-);
+parts.push(value);
 
 }
 
 }
+
+
+return parts.join(" ").trim();
+
+}
+
+
+/* ============================================================
+PADRE / SUBPARTIDA FLUJO
+============================================================ */
+
+function isCashflowParent(label) {
+
+const text =
+cleanText(label);
+
+
+if (
+/^\\d+\\.00\\b/.test(text)
+) {
+
+return true;
+
+}
+
+
+if (
+/^[A-Z]\\d+\\b/i.test(text)
+) {
+
+return true;
+
+}
+
+
+return false;
+
+}
+
+
+/* ============================================================
+PERÍODO A MES
+1 = ENERO 2025
+============================================================ */
+
+function periodToMonth(period) {
+
+const baseYear = 2025;
+
+const monthIndex =
+period - 1;
+
+
+const year =
+baseYear +
+Math.floor(
+monthIndex / 12
 );
 
 
-return groups;
+const month =
+monthIndex % 12;
+
+
+const names = [
+"Ene",
+"Feb",
+"Mar",
+"Abr",
+"May",
+"Jun",
+"Jul",
+"Ago",
+"Sep",
+"Oct",
+"Nov",
+"Dic"
+];
+
+
+return `${names[month]} ${year}`;
 
 }
 
@@ -2037,411 +2333,210 @@ RENDER GENERAL
 
 function renderDashboard() {
 
-if (!dashboardData) return;
-
-
-renderHeader();
-
-renderHome();
-
-renderExecutive();
-
-renderBudget();
-
+renderFinancial();
 renderPurchases();
-
 renderCashflow();
-
 renderTracking();
 
-renderPending();
-
 }
 
 
 /* ============================================================
-HEADER
+RENDER FINANCIERO
 ============================================================ */
 
-function renderHeader() {
-
-if (!currentProject) return;
-
-
-setText(
-"topProjectName",
-currentProject.name
-);
-
-
-setText(
-"topProjectSubtitle",
-"Seguimiento integral de presupuesto, compras y flujo de caja."
-);
-
-
-const opening =
-parseDateOnly(
-currentProject.openingDate
-);
-
-
-if (!opening) {
-
-setText(
-"openingDate",
-"—"
-);
-
-
-setText(
-"daysToOpening",
-"—"
-);
-
-
-setText(
-"executiveOpeningDate",
-"—"
-);
-
-
-setText(
-"executiveDays",
-"—"
-);
-
-
-return;
-
-}
-
-
-const formatted =
-formatDate(opening);
-
-
-const days =
-calculateDaysToOpening(
-opening
-);
-
-
-setText(
-"openingDate",
-formatted
-);
-
-
-setText(
-"daysToOpening",
-days
-);
-
-
-setText(
-"executiveOpeningDate",
-formatted
-);
-
-
-setText(
-"executiveDays",
-days
-);
-
-}
-
-
-/* ============================================================
-HOME
-============================================================ */
-
-function renderHome() {
+function renderFinancial() {
 
 const budget =
-dashboardData.budget;
+financialData.budget || 0;
+
+const real =
+financialData.real || 0;
+
+const difference =
+financialData.difference ||
+(
+budget - real
+);
 
 
-const purchases =
-dashboardData.purchases;
+const execution =
+budget !== 0
+? real / budget
+: 0;
 
+
+const savingsDOP =
+difference *
+SAVINGS_RATE;
+
+
+/* HOME */
 
 setText(
 "homeBudget",
-formatUSD(
-budget.totalBudget
-)
+formatUSD(budget)
 );
-
 
 setText(
 "homeReal",
-formatUSD(
-budget.totalReal
-)
+formatUSD(real)
 );
-
 
 setText(
 "homeDifference",
-formatUSD(
-budget.totalDifference
-)
+formatUSD(difference)
 );
-
 
 setText(
 "homeExecution",
-formatPercent(
-budget.execution
-)
+formatPercent(execution)
 );
 
 
-setText(
-"homePOCount",
-purchases.poCount
-);
-
-
-setText(
-"homePendingCount",
-purchases.pendingCount
-);
-
-
-/*
-Esta tarjeta se agregará en el
-index actualizado.
-*/
-
-if (
-document.getElementById(
-"homeSavingsDOP"
-)
-) {
-
-setText(
+setSavingsValue(
 "homeSavingsDOP",
-budget.totalDifference >= 0
-? formatDOP(
-budget.savingsDOP
-)
-: formatDOP(
--budget.overrunDOP
-)
-);
-
-}
-
-
-renderBudgetRealChart(
-"homeBudgetChart",
-budget.totalBudget,
-budget.totalReal
+savingsDOP
 );
 
 
-renderPurchaseStatusChart(
-"homePurchaseChart",
-purchases
-);
-
-
-renderCategoryTable(
-"homeCategoryTable",
-budget.categories
-);
-
-}
-
-
-/* ============================================================
-RESUMEN EJECUTIVO
-============================================================ */
-
-function renderExecutive() {
-
-const budget =
-dashboardData.budget;
-
-
-const purchases =
-dashboardData.purchases;
-
+/* EXECUTIVE */
 
 setText(
 "executiveBudget",
-formatUSD(
-budget.totalBudget
-)
+formatUSD(budget)
 );
-
 
 setText(
 "executiveReal",
-formatUSD(
-budget.totalReal
-)
+formatUSD(real)
 );
-
 
 setText(
 "executiveDifference",
-formatUSD(
-budget.totalDifference
-)
+formatUSD(difference)
 );
-
 
 setText(
 "executiveExecution",
-formatPercent(
-budget.execution
-)
+formatPercent(execution)
 );
-
-
-setText(
-"executivePO",
-purchases.poCount
-);
-
-
-setText(
-"executivePending",
-purchases.pendingCount
-);
-
-
-if (
-document.getElementById(
-"executiveSavingsDOP"
-)
-) {
-
-setText(
-"executiveSavingsDOP",
-budget.totalDifference >= 0
-? formatDOP(
-budget.savingsDOP
-)
-: formatDOP(
--budget.overrunDOP
-)
-);
-
-}
-
-
-const percentage =
-Math.max(
-0,
-Math.min(
-budget.execution * 100,
-100
-)
-);
-
 
 setText(
 "executiveProgressText",
-`${percentage.toFixed(1)}%`
+formatPercent(execution)
 );
 
 
-const progressBar =
+const progress =
 document.getElementById(
 "executiveProgressBar"
 );
 
 
-if (progressBar) {
+if (progress) {
 
-progressBar.style.width =
-`${percentage}%`;
+progress.style.width =
+`${Math.max(
+0,
+Math.min(
+execution * 100,
+100
+)
+)}%`;
 
 }
 
 
-renderCategoryChart(
-"executiveCategoryChart",
-budget.categories
+setSavingsValue(
+"executiveSavingsDOP",
+savingsDOP
 );
+
+
+/* BUDGET PAGE */
+
+setText(
+"budgetTotal",
+formatUSD(budget)
+);
+
+setText(
+"realTotal",
+formatUSD(real)
+);
+
+setText(
+"differenceTotal",
+formatUSD(difference)
+);
+
+setText(
+"budgetExecution",
+formatPercent(execution)
+);
+
+setSavingsValue(
+"budgetSavingsDOP",
+savingsDOP
+);
+
+
+renderBudgetTable();
+renderHomeCategoryTable();
+
+renderFinancialCharts();
 
 }
 
 
 /* ============================================================
-PRESUPUESTO VS REAL
+AHORRO / SOBREEJECUCIÓN
 ============================================================ */
 
-function renderBudget() {
-
-const budget =
-dashboardData.budget;
-
-
-setText(
-"budgetTotal",
-formatUSD(
-budget.totalBudget
-)
-);
-
-
-setText(
-"realTotal",
-formatUSD(
-budget.totalReal
-)
-);
-
-
-setText(
-"differenceTotal",
-formatUSD(
-budget.totalDifference
-)
-);
-
-
-setText(
-"budgetExecution",
-formatPercent(
-budget.execution
-)
-);
-
-
-if (
-document.getElementById(
-"budgetSavingsDOP"
-)
+function setSavingsValue(
+elementId,
+value
 ) {
 
-setText(
-"budgetSavingsDOP",
-budget.totalDifference >= 0
-? formatDOP(
-budget.savingsDOP
-)
-: formatDOP(
--budget.overrunDOP
-)
+const element =
+document.getElementById(
+elementId
 );
+
+
+if (!element) return;
+
+
+element.textContent =
+formatDOP(
+Math.abs(value)
+);
+
+
+const card =
+element.closest(
+".kpi-card"
+);
+
+
+if (!card) return;
+
+
+const label =
+card.querySelector(
+".kpi-label"
+);
+
+
+if (label) {
+
+label.textContent =
+value >= 0
+? "Ahorro RD$"
+: "Sobreejecución RD$";
 
 }
-
-
-renderCategoryChart(
-"budgetVsRealChart",
-budget.categories
-);
-
-
-renderBudgetTable();
 
 }
 
@@ -2452,20 +2547,10 @@ TABLA PRESUPUESTO
 
 function renderBudgetTable() {
 
-if (!dashboardData) return;
-
-
-const table =
-document.getElementById(
-"budgetTable"
-);
-
-
-if (!table) return;
-
-
 const tbody =
-table.querySelector("tbody");
+document.querySelector(
+"#budgetTable tbody"
+);
 
 
 if (!tbody) return;
@@ -2480,116 +2565,243 @@ document.getElementById(
 
 
 const rows =
-dashboardData.budget.categories
-.filter(
-item =>
+financialData.rows.filter(
+row =>
 !search ||
 normalizeText(
-item.name
+row.name
 ).includes(search)
 );
 
 
-tbody.innerHTML = "";
+tbody.innerHTML =
+rows.length
+? rows.map(row => {
+
+const execution =
+row.budget !== 0
+? row.real /
+row.budget
+: 0;
 
 
-rows.forEach(
-item => {
-
-const tr =
-document.createElement("tr");
-
-
-tr.innerHTML = `
-<td>${escapeHTML(item.name)}</td>
-
-<td class="number">
-${formatUSD(item.budget)}
-</td>
-
-<td class="number">
-${formatUSD(item.real)}
-</td>
-
-<td class="number">
-${formatUSD(item.difference)}
-</td>
-
-<td class="number">
-${formatPercent(item.execution)}
-</td>
+return `
+<tr>
+<td>${escapeHTML(row.name)}</td>
+<td class="number">${formatUSD(row.budget)}</td>
+<td class="number">${formatUSD(row.real)}</td>
+<td class="number">${formatUSD(row.difference)}</td>
+<td class="number">${formatPercent(execution)}</td>
+</tr>
 `;
 
-
-tbody.appendChild(tr);
-
-}
-);
+}).join("")
+: emptyRow(5);
 
 }
 
 
 /* ============================================================
-COMPRAS
+TABLA HOME
+============================================================ */
+
+function renderHomeCategoryTable() {
+
+const tbody =
+document.querySelector(
+"#homeCategoryTable tbody"
+);
+
+
+if (!tbody) return;
+
+
+let rows =
+financialData.rows.filter(
+row =>
+isMajorFinancialCategory(
+row.name
+)
+);
+
+
+if (!rows.length) {
+
+rows =
+financialData.rows.slice(
+0,
+10
+);
+
+}
+
+
+tbody.innerHTML =
+rows.length
+? rows.map(row => {
+
+const execution =
+row.budget !== 0
+? row.real /
+row.budget
+: 0;
+
+
+return `
+<tr>
+<td>${escapeHTML(row.name)}</td>
+<td class="number">${formatUSD(row.budget)}</td>
+<td class="number">${formatUSD(row.real)}</td>
+<td class="number">${formatUSD(row.difference)}</td>
+<td class="number">${formatPercent(execution)}</td>
+</tr>
+`;
+
+}).join("")
+: emptyRow(5);
+
+}
+
+
+/* ============================================================
+RENDER COMPRAS
 ============================================================ */
 
 function renderPurchases() {
 
-const data =
-dashboardData.purchases;
+const po =
+purchaseData.filter(
+row =>
+row.status === "po"
+);
+
+
+const pending =
+purchaseData.filter(
+row =>
+row.status ===
+"pending"
+);
+
+
+const stock =
+purchaseData.filter(
+row =>
+row.status ===
+"stock"
+);
+
+
+const poValue =
+po.reduce(
+(sum, row) =>
+sum + row.netDOP,
+0
+);
+
+
+setText(
+"homePOCount",
+po.length
+);
+
+setText(
+"homePendingCount",
+pending.length
+);
+
+
+setText(
+"executivePO",
+po.length
+);
+
+setText(
+"executivePending",
+pending.length
+);
 
 
 setText(
 "purchasePOCount",
-data.poCount
+po.length
 );
-
 
 setText(
 "purchasePendingCount",
-data.pendingCount
+pending.length
 );
-
 
 setText(
 "purchaseStockCount",
-data.stockCount
+stock.length
+);
+
+setText(
+"purchasePOValue",
+formatDOP(poValue)
 );
 
 
 setText(
-"purchasePOValue",
+"pendingTotal",
+pending.length
+);
+
+
+const affected =
+new Set(
+pending
+.map(
+row =>
+normalizeText(
+row.partida
+)
+)
+.filter(Boolean)
+);
+
+
+setText(
+"pendingCategoryCount",
+affected.size
+);
+
+
+const pendingValue =
+pending.reduce(
+(sum, row) =>
+sum +
+row.budgetDOP,
+0
+);
+
+
+setText(
+"pendingValue",
 formatDOP(
-data.poValue
+pendingValue
 )
 );
 
 
 renderPurchaseTable();
+renderPendingTable();
+renderPurchaseCharts();
 
 }
 
 
 /* ============================================================
-TABLA DE COMPRAS
+TABLA COMPRAS
 ============================================================ */
 
 function renderPurchaseTable() {
 
-if (!dashboardData) return;
-
-
-const table =
-document.getElementById(
-"purchaseTable"
-);
-
-
-if (!table) return;
-
-
 const tbody =
-table.querySelector("tbody");
+document.querySelector(
+"#purchaseTable tbody"
+);
 
 
 if (!tbody) return;
@@ -2609,140 +2821,57 @@ document.getElementById(
 )?.value || "all";
 
 
-let records =
-dashboardData.purchases.records;
+const rows =
+purchaseData.filter(row => {
 
+if (
+status !== "all" &&
+row.status !== status
+) {
 
-if (status !== "all") {
-
-records =
-records.filter(
-record =>
-record.status === status
-);
+return false;
 
 }
 
 
-if (search) {
+if (!search) {
 
-records =
-records.filter(
-record => {
+return true;
 
-const searchable =
+}
+
+
+const haystack =
 normalizeText(
 [
-record.partida,
-record.item,
-record.order
+row.partida,
+row.item,
+row.order
 ].join(" ")
 );
 
 
-return searchable.includes(
+return haystack.includes(
 search
 );
 
-}
-);
-
-}
+});
 
 
-tbody.innerHTML = "";
-
-
-records.forEach(
-record => {
-
-const tr =
-document.createElement("tr");
-
-
-tr.innerHTML = `
-<td>
-${escapeHTML(record.partida)}
-</td>
-
-<td>
-${escapeHTML(record.item)}
-</td>
-
-<td>
-${escapeHTML(record.order)}
-</td>
-
-<td>
-${formatExcelDate(record.date)}
-</td>
-
-<td class="number">
-${formatNumber(record.quantity)}
-</td>
-
-<td class="number">
-${formatDOP(record.netValue)}
-</td>
-
-<td>
-${statusBadge(record.status)}
-</td>
-`;
-
-
-tbody.appendChild(tr);
-
-}
-);
-
-}
-
-
-/* ============================================================
-PENDIENTES
-============================================================ */
-
-function renderPending() {
-
-const data =
-dashboardData.purchases;
-
-
-setText(
-"pendingTotal",
-data.pendingCount
-);
-
-
-const uniqueCategories =
-new Set(
-data.pendingRecords
-.map(
-item =>
-normalizeText(
-item.partida
-)
-)
-.filter(Boolean)
-);
-
-
-setText(
-"pendingCategoryCount",
-uniqueCategories.size
-);
-
-
-setText(
-"pendingValue",
-formatDOP(
-data.pendingValue
-)
-);
-
-
-renderPendingTable();
+tbody.innerHTML =
+rows.length
+? rows.map(row => `
+<tr>
+<td>${escapeHTML(row.partida)}</td>
+<td>${escapeHTML(row.item)}</td>
+<td>${escapeHTML(row.order)}</td>
+<td>${formatExcelDate(row.date)}</td>
+<td class="number">${formatNumber(row.quantity)}</td>
+<td class="number">${formatDOP(row.netDOP)}</td>
+<td>${purchaseStatusBadge(row.status)}</td>
+</tr>
+`).join("")
+: emptyRow(7);
 
 }
 
@@ -2753,20 +2882,10 @@ TABLA PENDIENTES
 
 function renderPendingTable() {
 
-if (!dashboardData) return;
-
-
-const table =
-document.getElementById(
-"pendingTable"
-);
-
-
-if (!table) return;
-
-
 const tbody =
-table.querySelector("tbody");
+document.querySelector(
+"#pendingTable tbody"
+);
 
 
 if (!tbody) return;
@@ -2780,671 +2899,13 @@ document.getElementById(
 );
 
 
-let records =
-dashboardData
-.purchases
-.pendingRecords;
-
-
-if (search) {
-
-records =
-records.filter(
-record => {
-
-const searchable =
-normalizeText(
-[
-record.partida,
-record.item,
-record.comment
-].join(" ")
-);
-
-
-return searchable.includes(
-search
-);
-
-}
-);
-
-}
-
-
-tbody.innerHTML = "";
-
-
-records.forEach(
-record => {
-
-const tr =
-document.createElement("tr");
-
-
-tr.innerHTML = `
-<td>
-${escapeHTML(record.partida)}
-</td>
-
-<td>
-${escapeHTML(record.item)}
-</td>
-
-<td class="number">
-${formatNumber(record.quantity)}
-</td>
-
-<td class="number">
-${formatDOP(record.budgetDOP)}
-</td>
-
-<td>
-${escapeHTML(record.comment)}
-</td>
-`;
-
-
-tbody.appendChild(tr);
-
-}
-);
-
-}
-
-
-/* ============================================================
-FLUJO DE CAJA
-============================================================ */
-
-function renderCashflow() {
-
-const data =
-dashboardData.cashflow;
-
-
-setText(
-"cashflowTotal",
-formatDOP(
-data.grandTotal
-)
-);
-
-
-setText(
-"cashflowCategoryCount",
-data.groups.length
-);
-
-
-setText(
-"cashflowPeriodCount",
-data.periods.length
-);
-
-
-renderCashflowChart();
-
-renderCashflowTable();
-
-}
-
-
-/* ============================================================
-GRÁFICA FLUJO
-============================================================ */
-
-function renderCashflowChart() {
-
-const data =
-dashboardData.cashflow;
-
-
-const labels =
-data.periods.map(
-period =>
-period.label
-);
-
-
-createChart(
-"cashflowChart",
-{
-type: "bar",
-
-data: {
-
-labels,
-
-datasets: [
-
-{
-label:
-"Flujo RD$",
-
-data:
-data.totals,
-
-borderWidth: 0
-}
-
-]
-
-},
-
-options: {
-
-responsive: true,
-
-maintainAspectRatio: false,
-
-plugins: {
-
-legend: {
-display: false
-},
-
-tooltip: {
-
-callbacks: {
-
-label: context =>
-formatDOP(
-context.raw
-)
-
-}
-
-}
-
-},
-
-scales: {
-
-y: {
-
-beginAtZero: true,
-
-ticks: {
-
-callback: value =>
-compactCurrency(
-value,
-"RD$"
-)
-
-}
-
-}
-
-}
-
-}
-
-}
-);
-
-}
-
-
-/* ============================================================
-TABLA FLUJO DESPLEGABLE
-============================================================ */
-
-function renderCashflowTable() {
-
-const data =
-dashboardData.cashflow;
-
-
-const thead =
-document.getElementById(
-"cashflowTableHead"
-);
-
-
-const tbody =
-document.getElementById(
-"cashflowTableBody"
-);
-
-
-if (!thead || !tbody) return;
-
-
-/* ENCABEZADO */
-
-let headerHTML = `
-<tr>
-<th class="cashflow-partida-column">
-Partida
-</th>
-`;
-
-
-data.periods.forEach(
-period => {
-
-headerHTML += `
-<th class="number">
-${escapeHTML(period.label)}
-</th>
-`;
-
-}
-);
-
-
-headerHTML += `
-<th class="number">
-Total
-</th>
-</tr>
-`;
-
-
-thead.innerHTML =
-headerHTML;
-
-
-/* CUERPO */
-
-tbody.innerHTML = "";
-
-
-data.groups.forEach(
-(group, groupIndex) => {
-
-const groupId =
-`cashflow-${groupIndex}`;
-
-
-const parent =
-document.createElement("tr");
-
-
-parent.className =
-"cashflow-group-row";
-
-
-let parentHTML = `
-<td>
-<button
-type="button"
-class="cashflow-toggle"
-data-group="${groupId}"
-aria-expanded="false"
->
-<span class="toggle-symbol">
-+
-</span>
-
-<strong>
-${escapeHTML(group.label)}
-</strong>
-</button>
-</td>
-`;
-
-
-group.values.forEach(
-value => {
-
-parentHTML += `
-<td class="number">
-${formatDOPCell(value)}
-</td>
-`;
-
-}
-);
-
-
-parentHTML += `
-<td class="number">
-<strong>
-${formatDOPCell(group.total)}
-</strong>
-</td>
-`;
-
-
-parent.innerHTML =
-parentHTML;
-
-
-tbody.appendChild(
-parent
-);
-
-
-group.children.forEach(
-child => {
-
-const tr =
-document.createElement("tr");
-
-
-tr.className =
-`cashflow-child-row ${groupId}`;
-
-
-tr.style.display =
-"none";
-
-
-let html = `
-<td class="cashflow-child-label">
-${escapeHTML(child.label)}
-</td>
-`;
-
-
-child.values.forEach(
-value => {
-
-html += `
-<td class="number">
-${formatDOPCell(value)}
-</td>
-`;
-
-}
-);
-
-
-html += `
-<td class="number">
-${formatDOPCell(child.total)}
-</td>
-`;
-
-
-tr.innerHTML =
-html;
-
-
-tbody.appendChild(
-tr
-);
-
-}
-);
-
-}
-);
-
-
-/* TOTAL GENERAL */
-
-if (data.periods.length) {
-
-const totalRow =
-document.createElement("tr");
-
-
-totalRow.className =
-"cashflow-total-row";
-
-
-let totalHTML = `
-<td>
-<strong>
-TOTAL
-</strong>
-</td>
-`;
-
-
-data.totals.forEach(
-value => {
-
-totalHTML += `
-<td class="number">
-<strong>
-${formatDOPCell(value)}
-</strong>
-</td>
-`;
-
-}
-);
-
-
-totalHTML += `
-<td class="number">
-<strong>
-${formatDOPCell(data.grandTotal)}
-</strong>
-</td>
-`;
-
-
-totalRow.innerHTML =
-totalHTML;
-
-
-tbody.appendChild(
-totalRow
-);
-
-}
-
-
-/*
-Eventos desplegables
-*/
-
-document
-.querySelectorAll(
-".cashflow-toggle"
-)
-.forEach(
-button => {
-
-button.addEventListener(
-"click",
-() => {
-
-toggleCashflowGroup(
-button
-);
-
-}
-);
-
-}
-);
-
-}
-
-
-/* ============================================================
-ABRIR / CERRAR GRUPO FLUJO
-============================================================ */
-
-function toggleCashflowGroup(button) {
-
-const group =
-button.dataset.group;
-
-
-const expanded =
-button.getAttribute(
-"aria-expanded"
-) === "true";
-
-
 const rows =
-document.querySelectorAll(
-`.${group}`
-);
-
-
-rows.forEach(
+purchaseData.filter(
 row => {
-
-row.style.display =
-expanded
-? "none"
-: "table-row";
-
-}
-);
-
-
-button.setAttribute(
-"aria-expanded",
-String(!expanded)
-);
-
-
-const symbol =
-button.querySelector(
-".toggle-symbol"
-);
-
-
-if (symbol) {
-
-symbol.textContent =
-expanded
-? "+"
-: "−";
-
-}
-
-}
-
-
-/* ============================================================
-EXPANDIR / CONTRAER TODO
-============================================================ */
-
-function toggleAllCashflow(expand) {
-
-document
-.querySelectorAll(
-".cashflow-toggle"
-)
-.forEach(
-button => {
-
-const group =
-button.dataset.group;
-
-
-document
-.querySelectorAll(
-`.${group}`
-)
-.forEach(
-row => {
-
-row.style.display =
-expand
-? "table-row"
-: "none";
-
-}
-);
-
-
-button.setAttribute(
-"aria-expanded",
-String(expand)
-);
-
-
-const symbol =
-button.querySelector(
-".toggle-symbol"
-);
-
-
-if (symbol) {
-
-symbol.textContent =
-expand
-? "−"
-: "+";
-
-}
-
-}
-);
-
-}
-
-
-/* ============================================================
-SEGUIMIENTO
-============================================================ */
-
-function renderTracking() {
-
-const budget =
-dashboardData.budget;
-
-
-const purchases =
-dashboardData.purchases;
-
-
-renderPurchaseStatusChart(
-"trackingStatusChart",
-purchases
-);
-
-
-renderBudgetRealChart(
-"trackingFinancialChart",
-budget.totalBudget,
-budget.totalReal
-);
-
-
-const table =
-document.getElementById(
-"trackingTable"
-);
-
-
-if (!table) return;
-
-
-const tbody =
-table.querySelector("tbody");
-
-
-if (!tbody) return;
-
-
-tbody.innerHTML = "";
-
-
-budget.categories.forEach(
-category => {
-
-const normalizedCategory =
-normalizeText(
-category.name
-);
-
-
-const matching =
-purchases.records.filter(
-record => {
-
-const partida =
-normalizeText(
-record.partida
-);
-
 
 if (
-!partida ||
-!normalizedCategory
+row.status !==
+"pending"
 ) {
 
 return false;
@@ -3452,515 +2913,44 @@ return false;
 }
 
 
-return (
-normalizedCategory.includes(
-partida
-) ||
-partida.includes(
-normalizedCategory
-)
-);
+if (!search) {
+
+return true;
+
+}
+
+
+return normalizeText(
+`${row.partida} ${row.item}`
+).includes(search);
 
 }
 );
 
 
-const po =
-matching.filter(
-item =>
-item.status === "po"
-).length;
-
-
-const pending =
-matching.filter(
-item =>
-item.status === "pending"
-).length;
-
-
-const stock =
-matching.filter(
-item =>
-item.status === "stock"
-).length;
-
-
-const tr =
-document.createElement("tr");
-
-
-tr.innerHTML = `
-<td>
-${escapeHTML(category.name)}
-</td>
-
-<td class="number">
-${formatUSD(category.budget)}
-</td>
-
-<td class="number">
-${formatUSD(category.real)}
-</td>
-
-<td class="number">
-${formatPercent(category.execution)}
-</td>
-
-<td class="number">
-${po}
-</td>
-
-<td class="number">
-${pending}
-</td>
-
-<td class="number">
-${stock}
-</td>
-`;
-
-
-tbody.appendChild(
-tr
-);
-
-}
-);
+tbody.innerHTML =
+rows.length
+? rows.map(row => `
+<tr>
+<td>${escapeHTML(row.partida)}</td>
+<td>${escapeHTML(row.item)}</td>
+<td class="number">${formatNumber(row.quantity)}</td>
+<td class="number">${formatDOP(row.budgetDOP)}</td>
+<td>${escapeHTML(row.comment)}</td>
+</tr>
+`).join("")
+: emptyRow(5);
 
 }
 
 
 /* ============================================================
-TABLA GENÉRICA DE PARTIDAS
+BADGE ESTADO
 ============================================================ */
 
-function renderCategoryTable(
-tableId,
-categories
+function purchaseStatusBadge(
+status
 ) {
-
-const table =
-document.getElementById(
-tableId
-);
-
-
-if (!table) return;
-
-
-const tbody =
-table.querySelector("tbody");
-
-
-if (!tbody) return;
-
-
-tbody.innerHTML = "";
-
-
-categories.forEach(
-item => {
-
-const tr =
-document.createElement("tr");
-
-
-tr.innerHTML = `
-<td>
-${escapeHTML(item.name)}
-</td>
-
-<td class="number">
-${formatUSD(item.budget)}
-</td>
-
-<td class="number">
-${formatUSD(item.real)}
-</td>
-
-<td class="number">
-${formatUSD(item.difference)}
-</td>
-
-<td class="number">
-${formatPercent(item.execution)}
-</td>
-`;
-
-
-tbody.appendChild(
-tr
-);
-
-}
-);
-
-}
-
-
-/* ============================================================
-GRÁFICAS
-============================================================ */
-
-function renderBudgetRealChart(
-canvasId,
-budget,
-real
-) {
-
-createChart(
-canvasId,
-{
-
-type: "bar",
-
-data: {
-
-labels: [
-"Presupuesto",
-"Real"
-],
-
-datasets: [
-
-{
-data: [
-budget,
-real
-],
-
-borderWidth: 0
-}
-
-]
-
-},
-
-options: {
-
-responsive: true,
-
-maintainAspectRatio: false,
-
-plugins: {
-
-legend: {
-display: false
-},
-
-tooltip: {
-
-callbacks: {
-
-label: context =>
-formatUSD(
-context.raw
-)
-
-}
-
-}
-
-},
-
-scales: {
-
-y: {
-
-beginAtZero: true,
-
-ticks: {
-
-callback: value =>
-compactCurrency(
-value,
-"US$"
-)
-
-}
-
-}
-
-}
-
-}
-
-}
-);
-
-}
-
-
-/* ============================================================
-GRÁFICA ESTADO COMPRAS
-============================================================ */
-
-function renderPurchaseStatusChart(
-canvasId,
-purchases
-) {
-
-createChart(
-canvasId,
-{
-
-type: "doughnut",
-
-data: {
-
-labels: [
-"Con OC",
-"Pendiente de compra",
-"Stock"
-],
-
-datasets: [
-
-{
-data: [
-purchases.poCount,
-purchases.pendingCount,
-purchases.stockCount
-],
-
-borderWidth: 2
-}
-
-]
-
-},
-
-options: {
-
-responsive: true,
-
-maintainAspectRatio: false,
-
-plugins: {
-
-legend: {
-
-position: "bottom"
-
-}
-
-}
-
-}
-
-}
-);
-
-}
-
-
-/* ============================================================
-GRÁFICA PARTIDAS
-============================================================ */
-
-function renderCategoryChart(
-canvasId,
-categories
-) {
-
-/*
-Evitamos una gráfica interminable.
-Mostramos las principales partidas
-con presupuesto.
-*/
-
-const filtered =
-categories
-.filter(
-item =>
-item.budget !== 0 ||
-item.real !== 0
-)
-.slice(0, 15);
-
-
-createChart(
-canvasId,
-{
-
-type: "bar",
-
-data: {
-
-labels:
-filtered.map(
-item =>
-item.name
-),
-
-datasets: [
-
-{
-label:
-"Presupuesto",
-
-data:
-filtered.map(
-item =>
-item.budget
-)
-},
-
-{
-label:
-"Real",
-
-data:
-filtered.map(
-item =>
-item.real
-)
-}
-
-]
-
-},
-
-options: {
-
-responsive: true,
-
-maintainAspectRatio: false,
-
-indexAxis: "y",
-
-plugins: {
-
-legend: {
-
-position: "bottom"
-
-},
-
-tooltip: {
-
-callbacks: {
-
-label: context =>
-`${context.dataset.label}: ${formatUSD(context.raw)}`
-
-}
-
-}
-
-},
-
-scales: {
-
-x: {
-
-beginAtZero: true,
-
-ticks: {
-
-callback: value =>
-compactCurrency(
-value,
-"US$"
-)
-
-}
-
-}
-
-}
-
-}
-
-}
-);
-
-}
-
-
-/* ============================================================
-CREAR CHART
-============================================================ */
-
-function createChart(
-canvasId,
-config
-) {
-
-const canvas =
-document.getElementById(
-canvasId
-);
-
-
-if (!canvas) return;
-
-
-if (
-typeof Chart === "undefined"
-) {
-
-console.error(
-"Chart.js no está cargado."
-);
-
-return;
-
-}
-
-
-if (charts[canvasId]) {
-
-charts[canvasId].destroy();
-
-}
-
-
-charts[canvasId] =
-new Chart(
-canvas,
-config
-);
-
-}
-
-
-/* ============================================================
-REDIMENSIONAR CHARTS
-============================================================ */
-
-function resizeCharts() {
-
-setTimeout(
-() => {
-
-Object
-.values(charts)
-.forEach(
-chart => {
-
-try {
-
-chart.resize();
-
-} catch (_) {}
-
-}
-);
-
-},
-100
-);
-
-}
-
-
-/* ============================================================
-ESTADO OC
-============================================================ */
-
-function statusBadge(status) {
 
 if (status === "po") {
 
@@ -4001,464 +2991,1103 @@ return "";
 
 
 /* ============================================================
-VALIDAR OC
+FLUJO DE CAJA
 ============================================================ */
 
-function isValidPurchaseOrder(value) {
+function renderCashflow() {
 
-if (
-value === null ||
-value === undefined
-) {
+const periods =
+cashflowData.periods;
 
-return false;
+const rows =
+cashflowData.rows;
+
+
+const total =
+calculateCashflowTotal(
+rows
+);
+
+
+setText(
+"cashflowTotal",
+formatDOP(total)
+);
+
+
+setText(
+"cashflowPeriodCount",
+periods.length
+);
+
+
+const parentCount =
+rows.filter(
+row =>
+row.isParent
+).length;
+
+
+setText(
+"cashflowCategoryCount",
+parentCount ||
+rows.length
+);
+
+
+renderCashflowTable();
+renderCashflowChart();
 
 }
 
 
-const text =
-cleanString(value);
+/* ============================================================
+TOTAL FLUJO SIN DOBLE CONTEO
+============================================================ */
+
+function calculateCashflowTotal(
+rows
+) {
+
+const parents =
+rows.filter(
+row =>
+row.isParent
+);
 
 
-if (!text) return false;
+if (parents.length) {
+
+return parents.reduce(
+(sum, row) =>
+sum + row.total,
+0
+);
+
+}
 
 
-const normalized =
-normalizeText(text);
+return rows.reduce(
+(sum, row) =>
+sum + row.total,
+0
+);
+
+}
+
+
+/* ============================================================
+TABLA FLUJO
+============================================================ */
+
+function renderCashflowTable() {
+
+const thead =
+document.getElementById(
+"cashflowTableHead"
+);
+
+
+const tbody =
+document.getElementById(
+"cashflowTableBody"
+);
 
 
 if (
-normalized === "plan" ||
-normalized.includes(
-"pendiente"
-) ||
-normalized.includes(
-"stock"
+!thead ||
+!tbody
+) {
+
+return;
+
+}
+
+
+const periods =
+cashflowData.periods;
+
+
+thead.innerHTML = `
+<tr>
+<th>Partida</th>
+
+${periods
+.map(
+period =>
+`<th class="number">${escapeHTML(period.label)}</th>`
 )
+.join("")}
+
+<th class="number">Total</th>
+</tr>
+`;
+
+
+if (
+!cashflowData.rows.length
 ) {
 
-return false;
+tbody.innerHTML =
+emptyRow(
+periods.length + 2
+);
+
+return;
 
 }
 
 
-/*
-Las OC reales observadas tienen
-formato numérico largo.
-*/
+const html = [];
 
-const digits =
-text.replace(
-/\D/g,
-""
+
+cashflowData.rows.forEach(
+row => {
+
+if (row.isParent) {
+
+html.push(`
+<tr
+class="cashflow-group-row"
+data-parent="${escapeHTML(row.id)}"
+>
+
+<td>
+
+<button
+class="cashflow-toggle"
+type="button"
+data-target="${escapeHTML(row.label)}"
+>
+
+<span class="toggle-symbol">
+−
+</span>
+
+<span>
+${escapeHTML(row.label)}
+</span>
+
+</button>
+
+</td>
+
+${row.values
+.map(
+value =>
+`<td class="number">${formatDOPCompact(value)}</td>`
+)
+.join("")}
+
+<td class="number">
+${formatDOPCompact(row.total)}
+</td>
+
+</tr>
+`);
+
+} else {
+
+html.push(`
+<tr
+class="cashflow-child-row"
+data-parent-label="${escapeHTML(row.parent || "")}"
+>
+
+<td class="cashflow-child-label">
+${escapeHTML(row.label)}
+</td>
+
+${row.values
+.map(
+value =>
+`<td class="number">${formatDOPCompact(value)}</td>`
+)
+.join("")}
+
+<td class="number">
+${formatDOPCompact(row.total)}
+</td>
+
+</tr>
+`);
+
+}
+
+}
 );
 
 
-return digits.length >= 6;
-
-}
-
-
-/* ============================================================
-HEADER MAP
-============================================================ */
-
-function createHeaderMap(headers) {
-
-const map = {};
+tbody.innerHTML =
+html.join("");
 
 
-headers.forEach(
-(header, index) => {
+tbody
+.querySelectorAll(
+".cashflow-toggle"
+)
+.forEach(button => {
 
-const normalized =
-normalizeText(header);
+button.addEventListener(
+"click",
+() => {
 
+const parent =
+button.dataset.target;
 
-if (!normalized) return;
-
-
-map[normalized] =
-index;
-
-}
+const children =
+tbody.querySelectorAll(
+".cashflow-child-row"
 );
 
 
-return map;
+let shouldHide = false;
 
-}
-
-
-/* ============================================================
-OBTENER VALOR POR POSIBLES ENCABEZADOS
-============================================================ */
-
-function getMappedValue(
-row,
-map,
-possibleNames
-) {
 
 for (
-const name of possibleNames
+const child of children
 ) {
-
-const normalized =
-normalizeText(name);
-
-
-/*
-Coincidencia exacta
-*/
 
 if (
-Object.prototype
-.hasOwnProperty
-.call(
-map,
-normalized
-)
+child.dataset.parentLabel ===
+parent
 ) {
 
-return row[
-map[normalized]
-];
+shouldHide =
+child.style.display !==
+"none";
 
-}
-
-
-/*
-Coincidencia flexible
-*/
-
-const found =
-Object.keys(map)
-.find(
-key =>
-key.includes(
-normalized
-) ||
-normalized.includes(
-key
-)
-);
-
-
-if (found) {
-
-return row[
-map[found]
-];
+break;
 
 }
 
 }
 
 
-return null;
-
-}
-
-
-/* ============================================================
-HEADERS ÚNICOS
-============================================================ */
-
-function makeUniqueHeaders(row) {
-
-const counts = {};
-
-
-return row.map(
-value => {
-
-const base =
-cleanString(value);
-
-
-if (!base) return "";
-
-
-const normalized =
-normalizeText(base);
-
-
-counts[normalized] =
-(
-counts[normalized] ||
-0
-) + 1;
-
+children.forEach(
+child => {
 
 if (
-counts[normalized] === 1
+child.dataset.parentLabel ===
+parent
 ) {
 
-return base;
-
-}
-
-
-return `${base} ${counts[normalized]}`;
-
-}
-);
-
-}
-
-
-/* ============================================================
-CASHFLOW: PERÍODO
-============================================================ */
-
-function parsePeriodNumber(value) {
-
-if (
-value === null ||
-value === undefined ||
-value === ""
-) {
-
-return null;
-
-}
-
-
-if (
-typeof value === "number" &&
-Number.isInteger(value) &&
-value >= 1 &&
-value <= 60
-) {
-
-return value;
-
-}
-
-
-const text =
-normalizeText(value);
-
-
-let match =
-text.match(
-/^p\s*(\d{1,2})$/
-);
-
-
-if (match) {
-
-const number =
-Number(match[1]);
-
-
-if (
-number >= 1 &&
-number <= 60
-) {
-
-return number;
-
-}
-
-}
-
-
-match =
-text.match(
-/^(\d{1,2})$/
-);
-
-
-if (match) {
-
-const number =
-Number(match[1]);
-
-
-if (
-number >= 1 &&
-number <= 60
-) {
-
-return number;
-
-}
-
-}
-
-
-return null;
-
-}
-
-
-/* ============================================================
-PERÍODO 1 = ENERO 2025
-============================================================ */
-
-function periodToMonthLabel(period) {
-
-if (
-!Number.isFinite(period) ||
-period < 1
-) {
-
-return `P${period}`;
-
-}
-
-
-const date =
-new Date(
-2025,
-period - 1,
-1
-);
-
-
-const month =
-date.toLocaleDateString(
-"es-DO",
-{
-month: "short"
-}
-);
-
-
-const year =
-date.getFullYear();
-
-
-return (
-month
-.replace(".", "")
-.replace(
-/^./,
-char =>
-char.toUpperCase()
-)
-+
-` ${year}`
-);
-
-}
-
-
-/* ============================================================
-MESES
-============================================================ */
-
-function isMonthName(value) {
-
-const text =
-normalizeText(value);
-
-
-if (!text) return false;
-
-
-const months = [
-
-"enero",
-"febrero",
-"marzo",
-"abril",
-"mayo",
-"junio",
-"julio",
-"agosto",
-"septiembre",
-"setiembre",
-"octubre",
-"noviembre",
-"diciembre",
-
-"ene",
-"feb",
-"mar",
-"abr",
-"may",
-"jun",
-"jul",
-"ago",
-"sep",
-"oct",
-"nov",
-"dic"
-
-];
-
-
-return months.some(
-month =>
-text.includes(month)
-);
-
-}
-
-
-/* ============================================================
-CÓDIGOS DE PARTIDA
-============================================================ */
-
-function isPartCode(value) {
-
-const text =
-cleanString(value);
-
-
-return (
-/^\d+(\.\d+)+$/.test(text) ||
-/^\d+\.\d+$/.test(text)
-);
-
-}
-
-
-/* ============================================================
-EXTRAER CÓDIGO
-============================================================ */
-
-function extractPartCode(value) {
-
-const text =
-cleanString(value);
-
-
-const match =
-text.match(
-/^(\d+(?:\.\d+)+)/
-);
-
-
-return match
-? match[1]
+child.style.display =
+shouldHide
+? "none"
 : "";
 
 }
 
-
-/* ============================================================
-PARTIDA PRINCIPAL
-============================================================ */
-
-function isMainCategory(code) {
-
-if (!code) return false;
-
-
-const match =
-String(code).match(
-/^(\d+)\.(\d+)$/
+}
 );
 
 
-if (!match) return false;
+const symbol =
+button.querySelector(
+".toggle-symbol"
+);
 
 
-return Number(match[2]) === 0;
+if (symbol) {
+
+symbol.textContent =
+shouldHide
+? "+"
+: "−";
+
+}
+
+}
+);
+
+});
+
+}
+
+
+/* ============================================================
+EXPANDIR / CONTRAER FLUJO
+============================================================ */
+
+function toggleAllCashflow(
+expand
+) {
+
+document
+.querySelectorAll(
+".cashflow-child-row"
+)
+.forEach(row => {
+
+row.style.display =
+expand
+? ""
+: "none";
+
+});
+
+
+document
+.querySelectorAll(
+".cashflow-toggle .toggle-symbol"
+)
+.forEach(symbol => {
+
+symbol.textContent =
+expand
+? "−"
+: "+";
+
+});
+
+}
+
+
+/* ============================================================
+SEGUIMIENTO
+============================================================ */
+
+function renderTracking() {
+
+const tbody =
+document.querySelector(
+"#trackingTable tbody"
+);
+
+
+if (!tbody) return;
+
+
+let rows =
+financialData.rows.filter(
+row =>
+isMajorFinancialCategory(
+row.name
+)
+);
+
+
+if (!rows.length) {
+
+rows =
+financialData.rows.slice(
+0,
+15
+);
+
+}
+
+
+tbody.innerHTML =
+rows.length
+? rows.map(row => {
+
+const purchases =
+purchaseData.filter(
+item =>
+matchPartida(
+item.partida,
+row.name
+)
+);
+
+
+const po =
+purchases.filter(
+item =>
+item.status ===
+"po"
+).length;
+
+
+const pending =
+purchases.filter(
+item =>
+item.status ===
+"pending"
+).length;
+
+
+const stock =
+purchases.filter(
+item =>
+item.status ===
+"stock"
+).length;
+
+
+const execution =
+row.budget !== 0
+? row.real /
+row.budget
+: 0;
+
+
+return `
+<tr>
+<td>${escapeHTML(row.name)}</td>
+<td class="number">${formatUSD(row.budget)}</td>
+<td class="number">${formatUSD(row.real)}</td>
+<td class="number">${formatPercent(execution)}</td>
+<td class="number">${po}</td>
+<td class="number">${pending}</td>
+<td class="number">${stock}</td>
+</tr>
+`;
+
+}).join("")
+: emptyRow(7);
+
+}
+
+
+/* ============================================================
+MATCH PARTIDAS
+============================================================ */
+
+function matchPartida(
+a,
+b
+) {
+
+const left =
+normalizeText(a);
+
+const right =
+normalizeText(b);
+
+
+if (
+!left ||
+!right
+) {
+
+return false;
+
+}
+
+
+return (
+left.includes(right) ||
+right.includes(left)
+);
+
+}
+
+
+/* ============================================================
+CHARTS FINANCIEROS
+============================================================ */
+
+function renderFinancialCharts() {
+
+createChart(
+"homeBudgetChart",
+{
+type: "bar",
+
+data: {
+
+labels: [
+"Presupuesto",
+"Real"
+],
+
+datasets: [{
+label: "US$",
+data: [
+financialData.budget,
+financialData.real
+]
+}]
+
+},
+
+options:
+standardChartOptions(
+value =>
+formatUSD(value)
+)
+}
+);
+
+
+let categories =
+financialData.rows.filter(
+row =>
+isMajorFinancialCategory(
+row.name
+)
+);
+
+
+if (!categories.length) {
+
+categories =
+financialData.rows.slice(
+0,
+10
+);
+
+}
+
+
+const categoryConfig = {
+
+type: "bar",
+
+data: {
+
+labels:
+categories.map(
+row => row.name
+),
+
+datasets: [
+
+{
+label:
+"Presupuesto US$",
+
+data:
+categories.map(
+row =>
+row.budget
+)
+},
+
+{
+label:
+"Real US$",
+
+data:
+categories.map(
+row =>
+row.real
+)
+}
+
+]
+
+},
+
+options:
+standardChartOptions(
+value =>
+formatUSD(value)
+)
+
+};
+
+
+createChart(
+"executiveCategoryChart",
+categoryConfig
+);
+
+
+createChart(
+"budgetVsRealChart",
+categoryConfig
+);
+
+
+createChart(
+"trackingFinancialChart",
+categoryConfig
+);
+
+}
+
+
+/* ============================================================
+CHARTS COMPRAS
+============================================================ */
+
+function renderPurchaseCharts() {
+
+const po =
+purchaseData.filter(
+row =>
+row.status === "po"
+).length;
+
+
+const pending =
+purchaseData.filter(
+row =>
+row.status ===
+"pending"
+).length;
+
+
+const stock =
+purchaseData.filter(
+row =>
+row.status ===
+"stock"
+).length;
+
+
+const config = {
+
+type: "doughnut",
+
+data: {
+
+labels: [
+"Con OC",
+"Pendiente",
+"Stock"
+],
+
+datasets: [{
+data: [
+po,
+pending,
+stock
+]
+}]
+
+},
+
+options: {
+
+responsive: true,
+
+maintainAspectRatio:
+false,
+
+plugins: {
+
+legend: {
+position: "bottom"
+}
+
+}
+
+}
+
+};
+
+
+createChart(
+"homePurchaseChart",
+config
+);
+
+
+createChart(
+"trackingStatusChart",
+config
+);
+
+}
+
+
+/* ============================================================
+CHART FLUJO
+============================================================ */
+
+function renderCashflowChart() {
+
+const periods =
+cashflowData.periods;
+
+
+const values =
+periods.map(
+(_, index) => {
+
+const parents =
+cashflowData.rows.filter(
+row =>
+row.isParent
+);
+
+
+const source =
+parents.length
+? parents
+: cashflowData.rows;
+
+
+return source.reduce(
+(sum, row) =>
+sum +
+(
+row.values[index] ||
+0
+),
+0
+);
+
+}
+);
+
+
+createChart(
+"cashflowChart",
+{
+
+type: "bar",
+
+data: {
+
+labels:
+periods.map(
+period =>
+period.label
+),
+
+datasets: [{
+label: "Flujo RD$",
+data: values
+}]
+
+},
+
+options:
+standardChartOptions(
+value =>
+formatDOP(value)
+)
+
+}
+);
+
+}
+
+
+/* ============================================================
+CREAR CHART
+============================================================ */
+
+function createChart(
+canvasId,
+config
+) {
+
+const canvas =
+document.getElementById(
+canvasId
+);
+
+
+if (
+!canvas ||
+typeof Chart ===
+"undefined"
+) {
+
+return;
+
+}
+
+
+if (
+charts[canvasId]
+) {
+
+charts[canvasId].destroy();
+
+}
+
+
+charts[canvasId] =
+new Chart(
+canvas,
+config
+);
+
+}
+
+
+/* ============================================================
+OPCIONES CHART
+============================================================ */
+
+function standardChartOptions(
+formatter
+) {
+
+return {
+
+responsive: true,
+
+maintainAspectRatio:
+false,
+
+plugins: {
+
+legend: {
+position: "bottom"
+},
+
+tooltip: {
+
+callbacks: {
+
+label(context) {
+
+const value =
+context.parsed.y ??
+context.parsed ??
+0;
+
+
+return (
+`${context.dataset.label || ""}: ` +
+formatter(value)
+);
+
+}
+
+}
+
+}
+
+},
+
+scales: {
+
+y: {
+
+beginAtZero: true,
+
+ticks: {
+
+callback(value) {
+
+return compactNumber(
+value
+);
+
+}
+
+}
+
+}
+
+}
+
+};
+
+}
+
+
+/* ============================================================
+RESET
+============================================================ */
+
+function resetDashboard() {
+
+financialData = {
+budget: 0,
+real: 0,
+difference: 0,
+rows: []
+};
+
+
+purchaseData = [];
+
+
+cashflowData = {
+periods: [],
+rows: []
+};
+
+
+const usdIds = [
+"homeBudget",
+"homeReal",
+"homeDifference",
+"executiveBudget",
+"executiveReal",
+"executiveDifference",
+"budgetTotal",
+"realTotal",
+"differenceTotal"
+];
+
+
+usdIds.forEach(
+id =>
+setText(
+id,
+"US$ 0.00"
+)
+);
+
+
+const dopIds = [
+"homeSavingsDOP",
+"executiveSavingsDOP",
+"budgetSavingsDOP",
+"purchasePOValue",
+"pendingValue",
+"cashflowTotal"
+];
+
+
+dopIds.forEach(
+id =>
+setText(
+id,
+"RD$ 0.00"
+)
+);
+
+
+[
+"homePOCount",
+"homePendingCount",
+"executivePO",
+"executivePending",
+"purchasePOCount",
+"purchasePendingCount",
+"purchaseStockCount",
+"pendingTotal",
+"pendingCategoryCount",
+"cashflowCategoryCount",
+"cashflowPeriodCount"
+].forEach(
+id =>
+setText(id, "0")
+);
+
+
+[
+"homeExecution",
+"executiveExecution",
+"executiveProgressText",
+"budgetExecution"
+].forEach(
+id =>
+setText(id, "0%")
+);
+
+
+const progress =
+document.getElementById(
+"executiveProgressBar"
+);
+
+
+if (progress) {
+
+progress.style.width =
+"0%";
+
+}
+
+}
+
+
+/* ============================================================
+HELPERS COLUMNAS
+============================================================ */
+
+function findColumn(
+headers,
+candidates
+) {
+
+for (
+let index = 0;
+index < headers.length;
+index++
+) {
+
+const header =
+headers[index];
+
+
+if (
+candidates.some(
+candidate =>
+header ===
+normalizeText(
+candidate
+) ||
+header.includes(
+normalizeText(
+candidate
+)
+)
+)
+) {
+
+return index;
+
+}
+
+}
+
+
+return -1;
+
+}
+
+
+function findColumnIncludes(
+headers,
+requiredWords
+) {
+
+const words =
+requiredWords.map(
+normalizeText
+);
+
+
+for (
+let index = 0;
+index < headers.length;
+index++
+) {
+
+const header =
+headers[index];
+
+
+if (
+words.every(
+word =>
+header.includes(word)
+)
+) {
+
+return index;
+
+}
+
+}
+
+
+return -1;
+
+}
+
+
+function getCell(
+row,
+index
+) {
+
+if (
+index == null ||
+index < 0
+) {
+
+return null;
+
+}
+
+
+return row[index];
 
 }
 
@@ -4470,8 +4099,7 @@ NÚMEROS
 function toNumber(value) {
 
 if (
-value === null ||
-value === undefined ||
+value == null ||
 value === ""
 ) {
 
@@ -4481,11 +4109,24 @@ return 0;
 
 
 if (
-typeof value === "number"
+typeof value ===
+"number"
 ) {
 
 return Number.isFinite(value)
 ? value
+: 0;
+
+}
+
+
+if (
+typeof value ===
+"boolean"
+) {
+
+return value
+? 1
 : 0;
 
 }
@@ -4496,36 +4137,40 @@ String(value)
 .trim();
 
 
-if (!text) return 0;
+if (!text) {
 
-
-let negative = false;
-
-
-/*
-Excel puede mostrar negativos:
-(5,160.86)
-*/
-
-if (
-text.startsWith("(") &&
-text.endsWith(")")
-) {
-
-negative = true;
+return 0;
 
 }
+
+
+const negative =
+/^\\(.*\\)$/.test(text);
 
 
 text =
 text
 .replace(/[()]/g, "")
-.replace(/RD\$/gi, "")
-.replace(/US\$/gi, "")
+.replace(/RD\\$/gi, "")
+.replace(/USD\\$/gi, "")
+.replace(/US\\$/gi, "")
+.replace(/DOP/gi, "")
 .replace(/USD/gi, "")
-.replace(/\$/g, "")
-.replace(/\s/g, "")
-.replace(/,/g, "");
+.replace(/\\$/g, "")
+.replace(/,/g, "")
+.replace(/\\s/g, "")
+.replace(/[^0-9.\\-]/g, "");
+
+
+if (
+!text ||
+text === "-" ||
+text === "."
+) {
+
+return 0;
+
+}
 
 
 const number =
@@ -4542,107 +4187,59 @@ return 0;
 
 
 return negative
-? -number
+? -Math.abs(number)
 : number;
 
 }
 
 
 /* ============================================================
-EXTRAER NÚMEROS DE UNA FILA
+TEXTO
 ============================================================ */
 
-function extractNumbers(row) {
-
-return row
-.map(
-value => {
+function cleanText(value) {
 
 if (
-typeof value === "number" &&
-Number.isFinite(value)
+value == null
 ) {
 
-return value;
+return "";
 
 }
 
 
-const number =
-toNumber(value);
-
-
-if (
-number !== 0
-) {
-
-return number;
+return String(value)
+.trim()
+.replace(/\\s+/g, " ");
 
 }
 
 
-return null;
+function normalizeText(value) {
 
-}
+return cleanText(value)
+.normalize("NFD")
+.replace(
+/[\\u0300-\\u036f]/g,
+""
 )
-.filter(
-value =>
-value !== null
-);
+.toLowerCase()
+.replace(/\\s+/g, " ")
+.trim();
 
 }
 
 
 /* ============================================================
-ÚLTIMA COLUMNA QUE CONTIENE TEXTO
-============================================================ */
-
-function findLastColumnContaining(
-values,
-search
-) {
-
-const target =
-normalizeText(search);
-
-
-for (
-let i = values.length - 1;
-i >= 0;
-i--
-) {
-
-if (
-values[i].includes(
-target
-)
-) {
-
-return i;
-
-}
-
-}
-
-
-return -1;
-
-}
-
-
-/* ============================================================
-FORMATOS MONEDA
+FORMATOS
 ============================================================ */
 
 function formatUSD(value) {
 
-const number =
-Number(value) || 0;
-
-
 return (
 "US$ " +
-number.toLocaleString(
+Number(value || 0)
+.toLocaleString(
 "en-US",
 {
 minimumFractionDigits: 2,
@@ -4653,20 +4250,13 @@ maximumFractionDigits: 2
 
 }
 
-
-/* ============================================================
-RD$
-============================================================ */
 
 function formatDOP(value) {
 
-const number =
-Number(value) || 0;
-
-
 return (
 "RD$ " +
-number.toLocaleString(
+Number(value || 0)
+.toLocaleString(
 "en-US",
 {
 minimumFractionDigits: 2,
@@ -4678,14 +4268,10 @@ maximumFractionDigits: 2
 }
 
 
-/* ============================================================
-CELDA RD$
-============================================================ */
-
-function formatDOPCell(value) {
+function formatDOPCompact(value) {
 
 const number =
-Number(value) || 0;
+Number(value || 0);
 
 
 if (number === 0) {
@@ -4700,8 +4286,8 @@ return (
 number.toLocaleString(
 "en-US",
 {
-minimumFractionDigits: 2,
-maximumFractionDigits: 2
+minimumFractionDigits: 0,
+maximumFractionDigits: 0
 }
 )
 );
@@ -4709,40 +4295,28 @@ maximumFractionDigits: 2
 }
 
 
-/* ============================================================
-PORCENTAJE
-============================================================ */
-
 function formatPercent(value) {
 
-const number =
-Number(value) || 0;
-
-
 return (
-number * 100
+Number(
+(value || 0) * 100
 ).toLocaleString(
-"es-DO",
+"en-US",
 {
 minimumFractionDigits: 1,
 maximumFractionDigits: 1
 }
-) + "%";
+) +
+"%"
+);
 
 }
 
 
-/* ============================================================
-NÚMERO
-============================================================ */
-
 function formatNumber(value) {
 
-const number =
-Number(value) || 0;
-
-
-return number.toLocaleString(
+return Number(value || 0)
+.toLocaleString(
 "en-US",
 {
 maximumFractionDigits: 2
@@ -4752,28 +4326,18 @@ maximumFractionDigits: 2
 }
 
 
-/* ============================================================
-MONEDA COMPACTA
-============================================================ */
-
-function compactCurrency(
-value,
-prefix
-) {
+function compactNumber(value) {
 
 const number =
-Number(value) || 0;
+Number(value || 0);
 
 
-const abs =
-Math.abs(number);
-
-
-if (abs >= 1000000) {
+if (
+Math.abs(number) >=
+1000000
+) {
 
 return (
-prefix +
-" " +
 (
 number /
 1000000
@@ -4784,11 +4348,12 @@ number /
 }
 
 
-if (abs >= 1000) {
+if (
+Math.abs(number) >=
+1000
+) {
 
 return (
-prefix +
-" " +
 (
 number /
 1000
@@ -4799,132 +4364,53 @@ number /
 }
 
 
-return (
-prefix +
-" " +
-number.toFixed(0)
-);
+return number.toFixed(0);
 
 }
 
 
 /* ============================================================
-FECHAS EXCEL
+FECHAS
 ============================================================ */
 
-function formatExcelDate(value) {
+function parseISODate(value) {
 
-if (!value) return "—";
-
-
-if (
-value instanceof Date &&
-!Number.isNaN(
-value.getTime()
-)
-) {
-
-return formatDate(value);
-
-}
-
-
-if (
-typeof value === "number"
-) {
-
-const parsed =
-XLSX.SSF.parse_date_code(
-value
-);
-
-
-if (parsed) {
-
-const date =
-new Date(
-parsed.y,
-parsed.m - 1,
-parsed.d
-);
-
-
-return formatDate(date);
-
-}
-
-}
-
-
-const parsed =
-new Date(value);
-
-
-if (
-!Number.isNaN(
-parsed.getTime()
-)
-) {
-
-return formatDate(parsed);
-
-}
-
-
-return cleanString(value);
-
-}
-
-
-/* ============================================================
-DATE ONLY
-============================================================ */
-
-function parseDateOnly(value) {
-
-if (!value) return null;
-
-
-const match =
-String(value).match(
-/^(\d{4})-(\d{2})-(\d{2})$/
-);
-
-
-if (match) {
-
-return new Date(
-Number(match[1]),
-Number(match[2]) - 1,
-Number(match[3])
-);
-
-}
-
-
-const date =
-new Date(value);
-
-
-if (
-Number.isNaN(
-date.getTime()
-)
-) {
+if (!value) {
 
 return null;
 
 }
 
 
-return date;
+const match =
+String(value).match(
+/^(\\d{4})-(\\d{2})-(\\d{2})$/
+);
+
+
+if (!match) {
+
+return null;
 
 }
 
 
-/* ============================================================
-FORMATO FECHA
-============================================================ */
+const date =
+new Date(
+Number(match[1]),
+Number(match[2]) - 1,
+Number(match[3])
+);
+
+
+return Number.isNaN(
+date.getTime()
+)
+? null
+: date;
+
+}
+
 
 function formatDate(date) {
 
@@ -4952,166 +4438,77 @@ year: "numeric"
 }
 
 
-/* ============================================================
-DÍAS PARA APERTURA
-============================================================ */
+function formatExcelDate(value) {
 
-function calculateDaysToOpening(
-opening
-) {
-
-const today =
-new Date();
-
-
-const current =
-new Date(
-today.getFullYear(),
-today.getMonth(),
-today.getDate()
-);
-
-
-const target =
-new Date(
-opening.getFullYear(),
-opening.getMonth(),
-opening.getDate()
-);
-
-
-const difference =
-target - current;
-
-
-return Math.ceil(
-difference /
-86400000
-);
-
-}
-
-
-/* ============================================================
-NORMALIZAR TEXTO
-============================================================ */
-
-function normalizeText(value) {
-
-return String(
-value ?? ""
-)
-.trim()
-.toLowerCase()
-.normalize("NFD")
-.replace(
-/[\u0300-\u036f]/g,
-""
-)
-.replace(
-/\s+/g,
-" "
-);
-
-}
-
-
-/* ============================================================
-LIMPIAR STRING
-============================================================ */
-
-function cleanString(value) {
-
-if (
-value === null ||
-value === undefined
-) {
+if (!value) {
 
 return "";
 
 }
 
 
-return String(value).trim();
+if (
+value instanceof Date
+) {
+
+return formatDate(value);
 
 }
 
 
-/* ============================================================
-¿ES MONEDA?
-============================================================ */
+if (
+typeof value ===
+"number"
+) {
 
-function isCurrencyLabel(value) {
-
-const text =
-normalizeText(value);
-
-
-return (
-text === "usd" ||
-text === "us$" ||
-text === "$" ||
-text === "rd$" ||
-text === "dop"
+const parsed =
+XLSX.SSF.parse_date_code(
+value
 );
 
-}
 
+if (parsed) {
 
-/* ============================================================
-¿PARECE NÚMERO?
-============================================================ */
-
-function isNumericLike(value) {
-
-const text =
-cleanString(value);
-
-
-if (!text) return false;
-
-
-return (
-/^[-+]?[\d,.()$ ]+$/.test(
-text
+return formatDate(
+new Date(
+parsed.y,
+parsed.m - 1,
+parsed.d
 )
 );
 
 }
 
+}
 
-/* ============================================================
-SET TEXT
-============================================================ */
 
-function setText(
-id,
-value
+const date =
+new Date(value);
+
+
+if (
+!Number.isNaN(
+date.getTime()
+)
 ) {
 
-const element =
-document.getElementById(id);
-
-
-if (element) {
-
-element.textContent =
-value;
+return formatDate(date);
 
 }
+
+
+return cleanText(value);
 
 }
 
 
 /* ============================================================
-ESCAPAR HTML
+HTML
 ============================================================ */
 
 function escapeHTML(value) {
 
-return String(
-value ?? ""
-)
+return cleanText(value)
 .replace(
 /&/g,
 "&amp;"
@@ -5136,61 +4533,22 @@ value ?? ""
 }
 
 
-/* ============================================================
-LOADING
-============================================================ */
+function emptyRow(columns) {
 
-function showLoading(
-show,
-text = ""
-) {
-
-const overlay =
-document.getElementById(
-"loadingOverlay"
-);
-
-
-if (!overlay) return;
-
-
-if (show) {
-
-overlay.classList.remove(
-"hidden"
-);
-
-} else {
-
-overlay.classList.add(
-"hidden"
-);
-
-}
-
-
-if (text) {
-
-setText(
-"loadingText",
-text
-);
-
-}
-
-}
-
-
-/* ============================================================
-STATUS
-============================================================ */
-
-function updateLoadStatus(text) {
-
-setText(
-"projectLoadStatus",
-text
-);
+return `
+<tr>
+<td
+colspan="${columns}"
+style="
+text-align:center;
+padding:28px;
+color:#7a8581;
+"
+>
+No hay datos para mostrar.
+</td>
+</tr>
+`;
 
 }
 
@@ -5237,90 +4595,84 @@ if (!element) return;
 element.className =
 "dashboard-message hidden";
 
-}
-
-
-/* ============================================================
-DATA VACÍA
-============================================================ */
-
-function createEmptyPurchaseData() {
-
-return {
-
-records: [],
-
-poRecords: [],
-
-pendingRecords: [],
-
-stockRecords: [],
-
-poCount: 0,
-
-pendingCount: 0,
-
-stockCount: 0,
-
-poValue: 0,
-
-pendingValue: 0
-
-};
+element.textContent =
+"";
 
 }
 
 
 /* ============================================================
-RESET
+LOADING
 ============================================================ */
 
-function resetDashboard() {
+function showLoading(
+visible,
+text = "Leyendo archivo Excel"
+) {
 
-dashboardData = {
+const overlay =
+document.getElementById(
+"loadingOverlay"
+);
 
-budget: {
 
-totalBudget: 0,
+const loadingText =
+document.getElementById(
+"loadingText"
+);
 
-totalReal: 0,
 
-totalDifference: 0,
+if (loadingText) {
 
-execution: 0,
-
-savingsUSD: 0,
-
-savingsDOP: 0,
-
-overrunUSD: 0,
-
-overrunDOP: 0,
-
-categories: []
-
-},
-
-purchases:
-createEmptyPurchaseData(),
-
-cashflow: {
-
-periods: [],
-
-rows: [],
-
-groups: [],
-
-totals: [],
-
-grandTotal: 0
+loadingText.textContent =
+text;
 
 }
 
-};
+
+if (!overlay) return;
 
 
-renderDashboard();
+if (visible) {
+
+overlay.classList.remove(
+"hidden"
+);
+
+} else {
+
+overlay.classList.add(
+"hidden"
+);
+
+}
+
+}
+
+
+/* ============================================================
+SET TEXT
+============================================================ */
+
+function setText(
+id,
+value
+) {
+
+const element =
+document.getElementById(id);
+
+
+if (!element) {
+
+return;
+
+}
+
+
+element.textContent =
+value == null
+? ""
+: String(value);
 
 }
