@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#064c8c">
+<title>Dashboard de Seguimiento de Iniciativas | Grupo Ramos</title>
+<link rel="stylesheet" href="style.css?v=7">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="loader" class="loader">
+<div class="spinner"></div>
+<b>Cargando proyecto...</b>
+<span>Procesando presupuesto, compras, flujo de caja y pendientes.</span>
+</div>
+
+<header class="topbar">
+<div class="brand">
+<img src="assets/sirena.png" alt="Sirena">
+<div>
+<strong>Dashboard de Seguimiento de Iniciativas</strong>
+<small>Control ejecutivo de iniciativas</small>
+</div>
+</div>
+
+<div class="top-actions">
+<label class="project-picker">
+<span>Proyecto</span>
+<select id="projectSelect"></select>
+</label>
+
+<div class="project-badge">
+<span id="projectBrand">Sirena</span>
+<b id="projectName">Mao</b>
+</div>
+</div>
+</header>
+
+<nav class="nav-tabs" id="navTabs">
+<button class="active" data-page="home">Inicio</button>
+<button data-page="overview">Resumen Ejecutivo</button>
+<button data-page="budget">Presupuesto & Compras</button>
+<button data-page="cashflow">Flujo de Caja</button>
+<button data-page="tracking">Seguimiento</button>
+<button data-page="pending">Pendientes</button>
+<button data-page="liquidation">Pre-Liquidación</button>
+</nav>
+
+<main>
+
+<section class="page active" id="page-home">
+
+<div class="hero-home">
+<div>
+<p class="eyebrow">CENTRO DE CONTROL DE INICIATIVAS</p>
+
+<h1>¿Qué muestra este dashboard?</h1>
+
+<p class="hero-copy">
+Esta web convierte la plantilla del proyecto en una vista ejecutiva para entender,
+en un solo lugar, <b>cuánto tenemos presupuestado, qué se ha comprado, qué pagos vienen,
+qué entregas están en riesgo y qué pendientes pueden afectar la apertura.</b>
+</p>
+
+<div class="home-callout">
+<span class="callout-icon">→</span>
+<div>
+<b>Cómo usarlo</b>
+<p>Empieza por Resumen Ejecutivo. Luego entra al módulo que explique la causa: presupuesto, flujo de caja, compras o pendientes.</p>
+</div>
+</div>
+</div>
+
+<div class="home-project-card">
+<span>PROYECTO ACTIVO</span>
+<b id="homeProjectName">Mao</b>
+<small id="homeOpeningText">Apertura programada</small>
+<div class="home-date" id="homeOpeningDate">15 Nov 2026</div>
+</div>
+</div>
+
+<section class="card guide-card">
+<div class="section-title">
+<div>
+<p class="eyebrow">MAPA DEL DASHBOARD</p>
+<h2>Qué encontrarás en cada sección</h2>
+</div>
+<span class="health-note">Todo se alimenta del Excel del proyecto</span>
+</div>
+
+<div class="module-guide">
+
+<article>
+<i>01</i>
+<div>
+<b>Resumen Ejecutivo</b>
+<p>Estado general del proyecto, presupuesto, cobertura de compras, riesgos y cuenta regresiva hacia la apertura.</p>
+</div>
+</article>
+
+<article>
+<i>02</i>
+<div>
+<b>Presupuesto & Compras</b>
+<p>Detalle de partidas, proveedores, órdenes de compra y montos que todavía requieren gestión.</p>
+</div>
+</article>
+
+<article>
+<i>03</i>
+<div>
+<b>Flujo de Caja</b>
+<p>Cuándo se esperan los desembolsos, cuánto se pagará por mes y recordatorios automáticos de próximos pagos.</p>
+</div>
+</article>
+
+<article>
+<i>04</i>
+<div>
+<b>Seguimiento</b>
+<p>Pipeline de procurement para localizar cuellos de botella entre proveedor, OC y seguimiento logístico.</p>
+</div>
+</article>
+
+<article>
+<i>05</i>
+<div>
+<b>Pendientes</b>
+<p>Centro de control de temas abiertos, responsables y comentarios que requieren seguimiento.</p>
+</div>
+</article>
+
+<article>
+<i>06</i>
+<div>
+<b>Pre-Liquidación</b>
+<p>Estimador para visualizar el efecto de flete, seguro, gravamen, ITBIS y otros gastos de importación.</p>
+</div>
+</article>
+
+</div>
+</section>
+
+<div class="grid-2">
+
+<section class="card">
+<div class="section-title">
+<div>
+<p class="eyebrow">LECTURA DE COLORES</p>
+<h2>Cómo interpretar las alertas</h2>
+</div>
+</div>
+
+<div class="legend-grid">
+
+<div>
+<i class="dot good"></i>
+<b>En línea</b>
+<span>Sin alerta relevante con la información disponible.</span>
+</div>
+
+<div>
+<i class="dot warn"></i>
+<b>Requiere seguimiento</b>
+<span>Hay una fecha, pago o dato que debe monitorearse.</span>
+</div>
+
+<div>
+<i class="dot bad"></i>
+<b>Atención</b>
+<span>Existe un atraso, vencimiento, pendiente o brecha importante.</span>
+</div>
+
+<div>
+<i class="dot info"></i>
+<b>Informativo</b>
+<span>Contexto para tomar decisiones, no necesariamente un problema.</span>
+</div>
+
+</div>
+</section>
+
+<section class="card">
+
+<div class="section-title">
+<div>
+<p class="eyebrow">ACTUALIZACIÓN</p>
+<h2>Qué pasa cuando subes una nueva plantilla</h2>
+</div>
+</div>
+
+<div class="refresh-flow">
+
+<div>
+<b>1</b>
+<span>Actualizas el Excel del proyecto.</span>
+</div>
+
+<div>
+<b>2</b>
+<span>Reemplazas el archivo dentro de <code>data/projects/</code>.</span>
+</div>
+
+<div>
+<b>3</b>
+<span>La web recalcula KPIs, pagos, reminders, tablas y alertas.</span>
+</div>
+
+</div>
+
+<p class="mini-note">
+La estructura está preparada para agregar otros proyectos mediante el selector superior sin rediseñar el dashboard.
+</p>
+
+</section>
+
+</div>
+</section>
+
+<section class="page" id="page-overview">
+
+<div class="page-heading">
+
+<div>
+<p class="eyebrow">CONTROL EJECUTIVO</p>
+<h1 id="overviewTitle">Sirena Compacta Mao</h1>
+<p id="overviewSubtitle">
+Vista integrada de presupuesto, procurement y preparación del proyecto.
+</p>
+</div>
+
+<div class="data-meta">
+<span>Fuente</span>
+<b id="sourceVersion">Plantilla Plan Detallado</b>
+</div>
+
+</div>
+
+<section class="opening-countdown-card">
+
+<div class="countdown-copy">
+<p class="eyebrow">CUENTA REGRESIVA</p>
+<h2>Apertura de <span id="countdownProject">Mao</span></h2>
+<p>
+Fecha objetivo:
+<b id="countdownDateLabel">15 de noviembre de 2026</b>
+</p>
+</div>
+
+<div class="countdown-clock" id="countdownClock">
+
+<div>
+<b id="cdDays">—</b>
+<span>Días</span>
+</div>
+
+<div>
+<b id="cdHours">—</b>
+<span>Horas</span>
+</div>
+
+<div>
+<b id="cdMinutes">—</b>
+<span>Min</span>
+</div>
+
+<div>
+<b id="cdSeconds">—</b>
+<span>Seg</span>
+</div>
+
+</div>
+
+<div class="countdown-status" id="countdownStatus">
+Hacia la apertura
+</div>
+
+</section>
+
+<section class="discount-summary-card">
+
+<div>
+<p class="eyebrow">OPTIMIZACIÓN DEL PROYECTO</p>
+
+<h2>Ahorro frente al presupuesto originalmente aprobado</h2>
+
+<p>
+Compara el <b>Plan detallado Aprobado</b> contra el
+<b>Plan Detallado en ejecución</b> de la hoja Plan OI.
+</p>
+</div>
+
+<div class="discount-summary-value">
+<span>Ahorro acumulado estimado</span>
+<b id="overviewDiscount">—</b>
+<small id="overviewDiscountOrders">
+Aprobado − plan vigente
+</small>
+</div>
+
+<div class="discount-summary-value secondary-value">
+<span>% de optimización</span>
+<b id="overviewDiscountPct">—</b>
+<small>Sobre presupuesto aprobado</small>
+</div>
+
+</section>
+
+<div class="kpi-grid overview-kpis executive-kpis">
+
+<article class="kpi">
+<span>Presupuesto aprobado</span>
+<b id="kpiApprovedBudget">—</b>
+<small>Base original aprobada</small>
+</article>
+
+<article class="kpi">
+<span>Presupuesto vigente</span>
+<b id="kpiBudget">—</b>
+<small>Plan en ejecución</small>
+</article>
+
+<article class="kpi progress-kpi">
+<span>Avance financiero ponderado</span>
+<b id="kpiWeightedProgress">—</b>
+<small>Valor con OC / presupuesto comprable</small>
+</article>
+
+<article class="kpi">
+<span>Valor con OC</span>
+<b id="kpiOrdered">—</b>
+<small>Compra ya colocada</small>
+</article>
+
+<article class="kpi">
+<span>Pendiente de compra</span>
+<b id="kpiPendingBuy">—</b>
+<small>Valor aún sin colocar</small>
+</article>
+
+<article class="kpi">
+<span>Pendientes abiertos</span>
+<b id="kpiOpenIssues">—</b>
+<small>Puntos que requieren gestión</small>
+</article>
+
+<article class="kpi hidden-kpi">
+<span>Cobertura</span>
+<b id="kpiCoverage">—</b>
+</article>
+
+<article class="kpi hidden-kpi">
+<span>Proveedores</span>
+<b id="kpiSuppliers">—</b>
+</article>
+
+</div>
+
+<section class="health-card">
+
+<div class="section-title">
+
+<div>
+<p class="eyebrow">PROJECT HEALTH</p>
+<h2>Lectura rápida del proyecto</h2>
+</div>
+
+<span class="health-note">
+Se genera automáticamente con la data disponible
+</span>
+
+</div>
+
+<div class="health-strip" id="healthStrip"></div>
+
+</section>
+
+<section class="card executive-reminders">
+
+<div class="section-title">
+
+<div>
+<p class="eyebrow">PRÓXIMOS DESEMBOLSOS</p>
+<h2>Recordatorios de pagos programados</h2>
+</div>
+
+<button class="link-button" data-go-page="cashflow">
+Ver flujo de caja →
+</button>
+
+</div>
+
+<div id="overviewPaymentReminders" class="reminder-strip"></div>
+
+</section>
+
+<div class="grid-2 overview-main executive-analysis">
+
+<section class="card">
+<div class="section-title">
+<div>
+<p class="eyebrow">PRESUPUESTO VIGENTE POR PARTIDA</p>
+<h2>¿Dónde está concentrado el presupuesto vigente?</h2>
+</div>
+</div>
+
+<div class="chart-wrap tall">
+<canvas id="budgetMixChart"></canvas>
+</div>
+</section>
+
+<section class="card">
+<div class="section-title">
+<div>
+<p class="eyebrow">APROBADO VS. VIGENTE POR PARTIDA</p>
+<h2>¿Qué partidas han reducido o incrementado su presupuesto?</h2>
+</div>
+</div>
+
+<div class="chart-wrap tall">
+<canvas id="budgetEvolutionChart"></canvas>
+</div>
+</section>
+
+</div>
+
+<div class="grid-2 executive-analysis second-row">
+
+<section class="card">
+
+<div class="section-title">
+<div>
+<p class="eyebrow">AHORRO / INCREMENTO POR PARTIDA</p>
+<h2>¿Dónde se está generando la optimización del proyecto?</h2>
+</div>
+</div>
+
+<div class="chart-wrap">
+<canvas id="savingsByPartChart"></canvas>
+</div>
+
+</section>
+
+<section class="card attention-card">
+
+<div class="section-title">
+<div>
+<p class="eyebrow">PRIORIDADES DE GESTIÓN</p>
+<h2>¿Qué requiere atención ejecutiva ahora?</h2>
+</div>
+</div>
+
+<div id="attentionList" class="attention-list"></div>
+
+</section>
+
+</div>
+
+<div class="grid-3">
+
+<section class="card">
+
+<div class="section-title">
+<div>
+<p class="eyebrow">PROCUREMENT</p>
+<h2>¿Qué proporción del pipeline ya tiene orden de compra?</h2>
+</div>
+</div>
+
+<div class="chart-wrap small">
+<canvas id="purchaseStatusChart"></canvas>
+</div>
+
+</section>
+
+<section class="card">
+
+<div class="section-title">
+<div>
+<p class="eyebrow">PROVEEDORES</p>
+<h2>¿En qué proveedores se concentra mayor valor?</h2>
+</div>
+</div>
+
+<div id="topSuppliers" class="rank-list"></div>
+
+</section>
+
+<section class="card">
+
+<div class="section-title">
+<div>
+<p class="eyebrow">CALIDAD DE DATOS</p>
+<h2>¿Qué datos limitan la lectura ejecutiva?</h2>
+</div>
+</div>
+
+<div id="dataQuality" class="quality-list"></div>
+
+</section>
+
+</div>
+
+</section>
+
+<section class="page" id="page-budget">
+
+<div class="page-heading">
+<div>
+<p class="eyebrow">PRESUPUESTO & COMPRAS</p>
+<h1>Plan detallado</h1>
+<p>Drill-down desde gran partida hasta ítem y proveedor.</p>
+</div>
+</div>
+
+<div class="filterbar">
+
+<label>
+Gran partida
+<select id="budgetCategoryFilter">
+<option value="">Todas</option>
+</select>
+</label>
+
+<label>
+Estado
+<select id="budgetStatusFilter">
+<option value="">Todos</option>
+<option>Pendiente de compra</option>
+<option>Con OC</option>
+<option>Sin OC definida</option>
+</select>
+</label>
+
+<label>
+Proveedor
+<select id="budgetSupplierFilter">
+<option value="">Todos</option>
+</select>
+</label>
+
+<button id="budgetReset" class="secondary">
+Limpiar filtros
+</button>
+
+</div>
+
+<div class="kpi-grid compact">
+
+<article class="kpi">
+<span>Presupuesto filtrado</span>
+<b id="budgetFilteredTotal">—</b>
+</article>
+
+<article class="kpi">
+<span>Valor con OC</span>
+<b id="budgetFilteredOrdered">—</b>
+</article>
+
+<article class="kpi">
+<span>Valor pendiente</span>
+<b id="budgetFilteredPending">—</b>
+</article>
+
+<article class="kpi">
+<span>Ítems</span>
+<b id="budgetFilteredItems">—</b>
+</article>
+
+</div>
+
+<div class="grid-2">
+
+<section class="card">
+<div class="section-title">
+<div>
+<p class="eyebrow">CATEGORÍAS</p>
+<h2>¿Qué partidas concentran el mayor presupuesto?</h2>
+</div>
+</div>
+
+<div class="chart-wrap">
+<canvas id="categoryChart"></canvas>
+</div>
+</section>
+
+<section class="card">
+<div class="section-title">
+<div>
+<p class="eyebrow">CONCENTRACIÓN</p>
+<h2>¿Dónde se concentra la exposición por proveedor?</h2>
+</div>
+</div>
+
+<div class="chart-wrap">
+<canvas id="supplierChart"></canvas>
+</div>
+</section>
+
+</div>
+
+<section class="card">
+
+<div class="section-title table-title">
+<div>
+<p class="eyebrow">DETALLE</p>
+<h2>Partidas de compra</h2>
+</div>
+
+<span id="budgetTableCount"></span>
+</div>
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+<tr>
+<th>Partida</th>
+<th>Ítem</th>
+<th>Proveedor</th>
+<th>OC / Estado</th>
+<th>Fecha</th>
+<th class="num">Presupuesto</th>
+<th>Moneda</th>
+</tr>
+</thead>
+
+<tbody id="budgetTableBody"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+</section>
+
+<section class="page" id="page-cashflow">
+
+<div class="page-heading">
+
+<div>
+<p class="eyebrow">FLUJO DE CAJA</p>
+<h1>Calendario de desembolsos</h1>
+<p>
+Visualiza cuándo está programado pagar y qué compromisos se aproximan según el BD Plan Detallado.
+</p>
+</div>
+
+<div class="cashflow-controls">
+
+<label>
+Ver montos en
+<select id="cashflowCurrencyView">
+<option value="DOP">Pesos dominicanos (DOP)</option>
+<option value="ORIGINAL">Moneda original</option>
+</select>
+</label>
+
+<div class="data-meta">
+<span>Fuente</span>
+<b>Flujo de Caja + BD Plan Detallado</b>
+</div>
+
+</div>
+
+</div>
+
+<div class="kpi-grid cashflow-kpis">
+
+<article class="kpi">
+<span>Compromisos programados</span>
+<b id="cfTotal">—</b>
+<small>Calendario completo de pagos</small>
+</article>
+
+<article class="kpi paid-kpi">
+<span>Pagos anteriores al corte</span>
+<b id="cfPaidToDate">—</b>
+<small>Según fecha programada; validar contra contabilidad</small>
+</article>
+
+<article class="kpi">
+<span>Mes de mayor desembolso</span>
+<b id="cfPeakMonth">—</b>
+<small id="cfPeakAmount">—</small>
+</article>
+
+<article class="kpi">
+<span>Próximo mes con pago</span>
+<b id="cfNextMonth">—</b>
+<small id="cfNextAmount">—</small>
+</article>
+
+<article class="kpi">
+<span>Próximos 90 días</span>
+<b id="cf90Days">—</b>
+<small>Compromisos próximos</small>
+</article>
+
+</div>
+
+<section class="card payment-alert-card">
+
+<div class="section-title">
+
+<div>
+<p class="eyebrow">REMINDERS AUTOMÁTICOS</p>
+<h2>Pagos que debes tener en el radar</h2>
+</div>
+
+<span class="health-note">
+Se generan a partir de Per.P1–Per.P5 y Pago 1–Pago 5 del BD
+</span>
+
+</div>
+
+<div id="paymentReminderList" class="payment-reminder-list"></div>
+
+</section>
+
+<div class="grid-3 cashflow-executive-grid">
+
+<section class="card">
+<div class="section-title">
+<div>
+<p class="eyebrow">NECESIDAD DE CAJA POR MES</p>
+<h2>¿En qué meses se concentra el mayor desembolso?</h2>
+</div>
+</div>
+
+<div class="chart-wrap tall">
+<canvas id="cashflowChart"></canvas>
+</div>
+</section>
+
+<section class="card">
+<div class="section-title">
+<div>
+<p class="eyebrow">CALENDARIO DE PAGOS</p>
+<h2>¿Cuánto del flujo ya correspondía pagar y cuánto está por venir?</h2>
+</div>
+</div>
+
+<div class="chart-wrap tall">
+<canvas id="cashflowStatusChart"></canvas>
+</div>
+</section>
+
+<section class="card">
+<div class="section-title">
+<div>
+<p class="eyebrow">COMPOSICIÓN POR MONEDA</p>
+<h2>¿En qué monedas están concentrados los compromisos?</h2>
+</div>
+</div>
+
+<div class="chart-wrap tall">
+<canvas id="cashflowCurrencyChart"></canvas>
+</div>
+</section>
+
+</div>
+
+<div class="grid-2 cashflow-secondary-grid">
+
+<section class="card">
+
+<div class="section-title">
+<div>
+<p class="eyebrow">FLUJO ACUMULADO</p>
+<h2>¿Cómo crece la necesidad de caja a lo largo del proyecto?</h2>
+</div>
+</div>
+
+<div class="chart-wrap">
+<canvas id="cashflowCumulativeChart"></canvas>
+</div>
+
+</section>
+
+<section class="card">
+
+<div class="section-title">
+<div>
+<p class="eyebrow">PRÓXIMOS COMPROMISOS</p>
+<h2>¿Qué meses requieren preparación financiera inmediata?</h2>
+</div>
+</div>
+
+<div id="cashflowUpcomingMonths" class="cashflow-upcoming"></div>
+
+</section>
+
+</div>
+
+<section class="card">
+
+<div class="section-title table-title">
+
+<div>
+<p class="eyebrow">PRÓXIMOS PAGOS</p>
+<h2>¿Qué pagos están vencidos, próximos o futuros?</h2>
+</div>
+
+<span id="paymentTableCount"></span>
+
+</div>
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+<tr>
+<th>Mes</th>
+<th>Partida</th>
+<th>Ítem</th>
+<th>Proveedor</th>
+<th>Pago</th>
+<th>Moneda</th>
+<th class="num">Monto original</th>
+<th class="num">Equiv. DOP</th>
+<th>Estado calendario</th>
+</tr>
+</thead>
+
+<tbody id="paymentTable"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+</section>
+
+<section class="page" id="page-tracking">
+
+<div class="page-heading">
+<div>
+<p class="eyebrow">SEGUIMIENTO DE COMPRAS</p>
+<h1>Pipeline de procurement</h1>
+<p>De la necesidad a la recepción, priorizando cuellos de botella.</p>
+</div>
+</div>
+
+<div class="kpi-grid compact">
+
+<article class="kpi">
+<span>Con OC</span>
+<b id="trackWithPO">—</b>
+</article>
+
+<article class="kpi">
+<span>Pendientes de compra</span>
+<b id="trackPending">—</b>
+</article>
+
+<article class="kpi">
+<span>Sin proveedor</span>
+<b id="trackNoSupplier">—</b>
+</article>
+
+<article class="kpi">
+<span>Sin fecha</span>
+<b id="trackNoDate">—</b>
+</article>
+
+</div>
+
+<section class="card pipeline-card">
+
+<div class="section-title">
+<div>
+<p class="eyebrow">PIPELINE</p>
+<h2>Estado consolidado de las compras</h2>
+</div>
+</div>
+
+<div class="pipeline" id="pipeline"></div>
+
+</section>
+
+<div class="grid-2">
+
+<section class="card">
+
+<div class="section-title">
+<div>
+<p class="eyebrow">CUELLOS DE BOTELLA</p>
+<h2>Partidas pendientes de mayor valor</h2>
+</div>
+</div>
+
+<div class="chart-wrap">
+<canvas id="bottleneckChart"></canvas>
+</div>
+
+</section>
+
+<section class="card">
+
+<div class="section-title">
+<div>
+<p class="eyebrow">PROVEEDORES</p>
+<h2>Órdenes por proveedor</h2>
+</div>
+</div>
+
+<div class="chart-wrap">
+<canvas id="supplierPOChart"></canvas>
+</div>
+
+</section>
+
+</div>
+
+<section class="card">
+
+<div class="section-title table-title">
+
+<div>
+<p class="eyebrow">SEGUIMIENTO</p>
+<h2>Ítems que necesitan gestión</h2>
+</div>
+
+<span id="trackingCount"></span>
+
+</div>
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+<tr>
+<th>Ítem</th>
+<th>Partida</th>
+<th>Proveedor</th>
+<th>Estado</th>
+<th>Comentario</th>
+<th class="num">Valor</th>
+</tr>
+</thead>
+
+<tbody id="trackingTable"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+</section>
+
+<section class="page" id="page-pending">
+
+<div class="page-heading">
+
+<div>
+<p class="eyebrow">PENDIENTES & RIESGOS</p>
+<h1>Centro de control</h1>
+<p>Lo que todavía necesita respuesta, responsable o cierre.</p>
+</div>
+
+</div>
+
+<div class="kpi-grid compact">
+
+<article class="kpi">
+<span>Pendientes</span>
+<b id="pendingTotal">—</b>
+</article>
+
+<article class="kpi">
+<span>Responsables</span>
+<b id="pendingOwners">—</b>
+</article>
+
+<article class="kpi">
+<span>Con comentario</span>
+<b id="pendingComments">—</b>
+</article>
+
+<article class="kpi">
+<span>Sin comentario</span>
+<b id="pendingNoComments">—</b>
+</article>
+
+</div>
+
+<div class="grid-2">
+
+<section class="card">
+
+<div class="section-title">
+<div>
+<p class="eyebrow">RESPONSABILIDAD</p>
+<h2>Pendientes por responsable</h2>
+</div>
+</div>
+
+<div class="chart-wrap">
+<canvas id="ownerChart"></canvas>
+</div>
+
+</section>
+
+<section class="card">
+
+<div class="section-title">
+<div>
+<p class="eyebrow">REGLAS DE LA PLANTILLA</p>
+<h2>Consideraciones de seguimiento</h2>
+</div>
+</div>
+
+<div id="considerations" class="considerations"></div>
+
+</section>
+
+</div>
+
+<section class="issue-board" id="issueBoard"></section>
+
+</section>
+
+<section class="page" id="page-liquidation">
+
+<div class="page-heading">
+
+<div>
+<p class="eyebrow">PRE-LIQUIDACIÓN</p>
+<h1>Estimador de costo de importación</h1>
+<p>
+Simula el costo puesto en República Dominicana antes de cerrar una compra internacional.
+</p>
+</div>
+
+</div>
+
+<section class="card explainer-card">
+
+<div class="explainer-icon">i</div>
+
+<div>
+<b>¿Para qué sirve esta pestaña?</b>
+
+<p>
+Úsala para comparar rápidamente escenarios de importación por país de origen.
+A partir del valor de compra estima flete, seguro, CIF, gravamen, ITBIS y otros
+gastos, ayudando a decidir si una cotización internacional sigue siendo
+conveniente antes de emitir la orden. Es una herramienta de decisión
+preliminar, no una liquidación aduanal definitiva.
+</p>
+</div>
+
+</section>
+
+<section class="card calc-inputs">
+
+<label>
+Monto compra (USD)
+<input id="liqAmount" type="number" min="0" step="100" value="10000">
+</label>
+
+<label>
+EXW / traslado a puerto (USD)
+<input id="liqExw" type="number" min="0" step="100" value="0">
+</label>
+
+<label>
+FOB / FCA (USD)
+<input id="liqFob" type="number" min="0" step="100" value="1000">
+</label>
+
+<label>
+Contenedores
+<input id="liqContainers" type="number" min="1" step="1" value="1">
+</label>
+
+<label>
+Tasa DOP/USD
+<input id="liqRate" type="number" min="1" step=".01" value="57.85">
+</label>
+
+</section>
+
+<div class="scenario-grid" id="liquidationScenarios"></div>
+
+<section class="card disclaimer">
+<b>Nota:</b>
+este módulo usa los parámetros de la hoja “Pre-Liquidar” como referencia operativa.
+No sustituye una liquidación aduanal ni una cotización formal.
+</section>
+
+</section>
+
+</main>
+
+<footer>
+<span>Grupo Ramos · Dashboard de Seguimiento de Iniciativas</span>
+<span id="footerProject">Proyecto Mao</span>
+</footer>
+
+<script src="script.js?v=7"></script>
+
+</body>
+</html>
