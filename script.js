@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================
-DASHBOARD CAPEX
+DASHBOARD CAPEX - GRUPO RAMOS
 ========================================================= */
 
 const PROJECTS_URL = "data/projects.json";
@@ -80,9 +80,7 @@ refreshButton.addEventListener(
 "click",
 async function () {
 if (currentProject) {
-await loadProject(
-currentProject.id
-);
+await loadProject(currentProject.id);
 }
 }
 );
@@ -100,8 +98,6 @@ renderBudgetTable
 }
 
 
-/* PRESUPUESTO - EXPANDIR */
-
 const expandBudget =
 document.getElementById("expandBudget");
 
@@ -114,8 +110,6 @@ toggleAllBudget(true);
 );
 }
 
-
-/* PRESUPUESTO - CONTRAER */
 
 const collapseBudget =
 document.getElementById("collapseBudget");
@@ -142,9 +136,7 @@ renderPurchaseTable
 
 
 const purchaseStatusFilter =
-document.getElementById(
-"purchaseStatusFilter"
-);
+document.getElementById("purchaseStatusFilter");
 
 if (purchaseStatusFilter) {
 purchaseStatusFilter.addEventListener(
@@ -165,12 +157,8 @@ renderPendingTable
 }
 
 
-/* FLUJO - EXPANDIR */
-
 const expandCashflow =
-document.getElementById(
-"expandCashflow"
-);
+document.getElementById("expandCashflow");
 
 if (expandCashflow) {
 expandCashflow.addEventListener(
@@ -182,12 +170,8 @@ toggleAllCashflow(true);
 }
 
 
-/* FLUJO - CONTRAER */
-
 const collapseCashflow =
-document.getElementById(
-"collapseCashflow"
-);
+document.getElementById("collapseCashflow");
 
 if (collapseCashflow) {
 collapseCashflow.addEventListener(
@@ -214,25 +198,36 @@ buttons.forEach(function (button) {
 button.addEventListener(
 "click",
 function () {
-buttons.forEach(function (item) {
-item.classList.remove("active");
-});
+buttons.forEach(
+function (item) {
+item.classList.remove(
+"active"
+);
+}
+);
 
-button.classList.add("active");
+button.classList.add(
+"active"
+);
 
 document
 .querySelectorAll(".page")
 .forEach(function (page) {
-page.classList.remove("active");
+page.classList.remove(
+"active"
+);
 });
 
 const target =
 document.getElementById(
-"page-" + button.dataset.page
+"page-" +
+button.dataset.page
 );
 
 if (target) {
-target.classList.add("active");
+target.classList.add(
+"active"
+);
 }
 }
 );
@@ -251,7 +246,9 @@ setText(
 );
 
 const response = await fetch(
-PROJECTS_URL + "?v=" + Date.now(),
+PROJECTS_URL +
+"?v=" +
+Date.now(),
 {
 cache: "no-store"
 }
@@ -309,7 +306,9 @@ select.value =
 String(firstProject.id);
 }
 
-await loadProject(firstProject.id);
+await loadProject(
+firstProject.id
+);
 }
 
 
@@ -325,9 +324,12 @@ return;
 
 select.innerHTML = "";
 
-projects.forEach(function (project) {
+projects.forEach(
+function (project) {
 const option =
-document.createElement("option");
+document.createElement(
+"option"
+);
 
 option.value =
 String(project.id);
@@ -338,7 +340,8 @@ project.id ||
 "Iniciativa";
 
 select.appendChild(option);
-});
+}
+);
 }
 
 
@@ -348,12 +351,14 @@ CARGAR INICIATIVA
 
 async function loadProject(projectId) {
 const project =
-projects.find(function (item) {
+projects.find(
+function (item) {
 return (
 String(item.id) ===
 String(projectId)
 );
-});
+}
+);
 
 if (!project) {
 showMessage(
@@ -374,7 +379,8 @@ try {
 showLoading(
 true,
 "Leyendo " +
-(project.name || project.id) +
+(project.name ||
+project.id) +
 "..."
 );
 
@@ -420,7 +426,8 @@ response.status
 }
 
 if (
-typeof XLSX === "undefined"
+typeof XLSX ===
+"undefined"
 ) {
 throw new Error(
 "No se cargó la librería XLSX."
@@ -464,7 +471,8 @@ setText(
 
 showMessage(
 "No se pudo leer " +
-(project.name || project.id) +
+(project.name ||
+project.id) +
 ". " +
 error.message,
 "error"
@@ -498,8 +506,15 @@ project.openingDate
 );
 
 if (!opening) {
-setText("openingDate", "—");
-setText("daysToOpening", "—");
+setText(
+"openingDate",
+"—"
+);
+
+setText(
+"daysToOpening",
+"—"
+);
 
 setText(
 "executiveOpeningDate",
@@ -527,7 +542,8 @@ setText(
 formatted
 );
 
-const today = new Date();
+const today =
+new Date();
 
 today.setHours(
 0,
@@ -549,7 +565,8 @@ today.getTime();
 
 const days =
 Math.ceil(
-difference / 86400000
+difference /
+86400000
 );
 
 setText(
@@ -713,6 +730,10 @@ sheetName
 }
 
 
+/* =========================================================
+MATRICES EXCEL
+========================================================= */
+
 function sheetToMatrix(sheet) {
 return XLSX.utils.sheet_to_json(
 sheet,
@@ -725,29 +746,14 @@ raw: true
 }
 
 
-/*
-MATRIZ VISUAL
-
-Esta segunda matriz es MUY IMPORTANTE.
-
-raw:false permite conservar cómo Excel
-muestra códigos como:
-
-1.00
-1.01
-2.00
-2.01
-
-aunque internamente Excel los guarde
-como números.
-*/
-
-function sheetToDisplayMatrix(sheet) {
+function sheetToFormattedMatrix(
+sheet
+) {
 return XLSX.utils.sheet_to_json(
 sheet,
 {
 header: 1,
-defval: null,
+defval: "",
 raw: false
 }
 );
@@ -755,240 +761,166 @@ raw: false
 
 
 /* =========================================================
-JERARQUÍA DE PARTIDAS
+CÓDIGOS DE PARTIDA
 ========================================================= */
 
-/*
-Convierte:
+function normalizePartidaCode(value) {
+let text =
+cleanText(value);
 
-2.00 -> padre grupo 2
-2.01 -> hijo grupo 2
-2.15 -> hijo grupo 2
-
-NO confunde:
-
-2.xx con 20.xx
-*/
-
-function getPartidaHierarchy(code) {
-const clean =
-cleanText(code);
-
-if (!clean) {
-return {
-code: "",
-group: "",
-isParent: false,
-isChild: false
-};
-}
-
-const parts =
-clean.split(".");
-
-if (parts.length !== 2) {
-return {
-code: "",
-group: "",
-isParent: false,
-isChild: false
-};
-}
-
-const major =
-parts[0];
-
-const minor =
-parts[1];
-
-if (
-major === "" ||
-minor === ""
-) {
-return {
-code: "",
-group: "",
-isParent: false,
-isChild: false
-};
-}
-
-if (
-Number.isNaN(Number(major)) ||
-Number.isNaN(Number(minor))
-) {
-return {
-code: "",
-group: "",
-isParent: false,
-isChild: false
-};
-}
-
-const formattedMinor =
-minor.padStart(2, "0");
-
-const normalizedCode =
-String(Number(major)) +
-"." +
-formattedMinor;
-
-return {
-code: normalizedCode,
-
-group:
-String(Number(major)),
-
-isParent:
-Number(minor) === 0,
-
-isChild:
-Number(minor) !== 0
-};
-}
-
-
-/*
-Busca el código X.XX en las primeras
-columnas de una fila.
-*/
-
-function extractPartidaCode(row) {
-if (!row) {
+if (!text) {
 return "";
 }
 
-const limit =
-Math.min(
-row.length,
-5
+text = text.replace(
+",",
+"."
 );
-
-for (
-let c = 0;
-c < limit;
-c++
-) {
-const value =
-cleanText(row[c]);
-
-if (!value) {
-continue;
-}
-
-const hierarchy =
-getPartidaHierarchy(value);
-
-if (hierarchy.code) {
-return hierarchy.code;
-}
 
 /*
-También puede venir:
-"2.00 Obra Civil"
+Si Excel devuelve 2 en vez de 2.00,
+lo convertimos a 2.00 únicamente
+cuando el valor parece ser un código.
 */
 
-const firstToken =
-value.split(" ")[0];
+if (
+text.indexOf(".") < 0 &&
+isDigitsOnly(text)
+) {
+const number =
+Number(text);
 
-const tokenHierarchy =
-getPartidaHierarchy(
-firstToken
+if (
+Number.isInteger(number) &&
+number >= 1 &&
+number <= 99
+) {
+return (
+number.toFixed(2)
 );
-
-if (tokenHierarchy.code) {
-return tokenHierarchy.code;
 }
 }
 
+const pieces =
+text.split(".");
+
+if (
+pieces.length !== 2
+) {
 return "";
 }
 
-
-/*
-Obtiene descripción sin repetir
-el código.
-*/
-
-function extractPartidaDescription(
-row,
-code
-) {
-if (!row) {
-return "";
-}
-
-const limit =
-Math.min(
-row.length,
-6
-);
-
-for (
-let c = 0;
-c < limit;
-c++
-) {
-const value =
-cleanText(row[c]);
-
-if (!value) {
-continue;
-}
-
-const normalized =
-normalizeText(value);
-
 if (
-normalized === "usd" ||
-normalized === "usd$" ||
-normalized === "us$" ||
-normalized === "dop" ||
-normalized === "rd$"
-) {
-continue;
-}
-
-const hierarchy =
-getPartidaHierarchy(value);
-
-if (
-hierarchy.code &&
-hierarchy.code === code
-) {
-continue;
-}
-
-const firstToken =
-value.split(" ")[0];
-
-const tokenHierarchy =
-getPartidaHierarchy(
-firstToken
-);
-
-if (
-tokenHierarchy.code &&
-tokenHierarchy.code === code
-) {
-const withoutCode =
-cleanText(
-value.substring(
-firstToken.length
+!isDigitsOnly(
+pieces[0]
+) ||
+!isDigitsOnly(
+pieces[1]
 )
-);
-
-if (withoutCode) {
-return withoutCode;
-}
-
-continue;
-}
-
-return value;
-}
-
+) {
 return "";
+}
+
+if (
+pieces[1].length === 1
+) {
+pieces[1] += "0";
+}
+
+if (
+pieces[1].length !== 2
+) {
+return "";
+}
+
+return (
+String(
+Number(pieces[0])
+) +
+"." +
+pieces[1]
+);
+}
+
+
+function isDigitsOnly(value) {
+const text =
+String(value || "");
+
+if (!text) {
+return false;
+}
+
+for (
+let i = 0;
+i < text.length;
+i++
+) {
+if (
+text[i] < "0" ||
+text[i] > "9"
+) {
+return false;
+}
+}
+
+return true;
+}
+
+
+function getCodeGroup(code) {
+const normalized =
+normalizePartidaCode(code);
+
+if (!normalized) {
+return "";
+}
+
+const dot =
+normalized.indexOf(".");
+
+if (dot < 0) {
+return "";
+}
+
+return normalized.substring(
+0,
+dot
+);
+}
+
+
+function isParentCode(code) {
+const normalized =
+normalizePartidaCode(code);
+
+return (
+normalized &&
+normalized.endsWith(".00")
+);
+}
+
+
+function getParentCode(code) {
+const normalized =
+normalizePartidaCode(code);
+
+if (!normalized) {
+return "";
+}
+
+if (isParentCode(normalized)) {
+return "";
+}
+
+const group =
+getCodeGroup(normalized);
+
+if (!group) {
+return "";
+}
+
+return group + ".00";
 }
 
 
@@ -996,12 +928,16 @@ return "";
 PRESUPUESTO VS REAL
 ========================================================= */
 
-function parseFinancialSheet(sheet) {
+function parseFinancialSheet(
+sheet
+) {
 const matrix =
 sheetToMatrix(sheet);
 
-const displayMatrix =
-sheetToDisplayMatrix(sheet);
+const formattedMatrix =
+sheetToFormattedMatrix(
+sheet
+);
 
 const result = {
 budget: 0,
@@ -1015,7 +951,11 @@ return result;
 }
 
 
-/* TOTAL GENERAL */
+/* -------------------------------------------------------
+TOTAL GENERAL ESTIMADO
+IMPORTANTE:
+NO SE SUMAN PADRES + HIJOS.
+------------------------------------------------------- */
 
 let totalRow = -1;
 
@@ -1026,10 +966,15 @@ r++
 ) {
 const rowText =
 normalizeText(
-(displayMatrix[r] || matrix[r] || [])
-.filter(function (value) {
-return value !== null;
-})
+(formattedMatrix[r] || [])
+.filter(
+function (value) {
+return (
+value !== null &&
+value !== ""
+);
+}
+)
 .join(" ")
 );
 
@@ -1042,7 +987,6 @@ totalRow = r;
 break;
 }
 }
-
 
 const totals =
 findFinancialTotals(
@@ -1062,27 +1006,38 @@ totals.difference;
 }
 
 
+/* -------------------------------------------------------
+COLUMNAS
+------------------------------------------------------- */
+
 const columns =
 detectFinancialColumns(
-displayMatrix
+formattedMatrix
 );
 
 
-/* RESUMEN */
+/* -------------------------------------------------------
+RESUMEN DE PARTIDAS
+------------------------------------------------------- */
 
 let summaryRow = -1;
 
 for (
 let r = 0;
-r < displayMatrix.length;
+r < formattedMatrix.length;
 r++
 ) {
 const text =
 normalizeText(
-(displayMatrix[r] || [])
-.filter(function (value) {
-return value !== null;
-})
+(formattedMatrix[r] || [])
+.filter(
+function (value) {
+return (
+value !== null &&
+value !== ""
+);
+}
+)
 .join(" ")
 );
 
@@ -1095,7 +1050,6 @@ summaryRow = r;
 break;
 }
 }
-
 
 const start =
 summaryRow >= 0
@@ -1111,48 +1065,23 @@ r++
 const rawRow =
 matrix[r] || [];
 
-const displayRow =
-displayMatrix[r] || [];
+const formattedRow =
+formattedMatrix[r] || [];
 
-
-const code =
-extractPartidaCode(
-displayRow
+const labelInfo =
+getFinancialLabelInfo(
+rawRow,
+formattedRow
 );
 
-
-let name =
-extractPartidaDescription(
-displayRow,
-code
-);
-
-
-/*
-Si no existe código, mantenemos
-categorías como:
-
-EDIFICACION
-EQUIPAMIENTO
-TERRENO
-*/
-
-if (!name) {
-name =
-getFinancialLabel(
-displayRow
-);
-}
-
-
-if (!name && !code) {
+if (!labelInfo.name) {
 continue;
 }
 
-
 const normalizedName =
-normalizeText(name);
-
+normalizeText(
+labelInfo.name
+);
 
 if (
 normalizedName.indexOf(
@@ -1165,40 +1094,49 @@ normalizedName.indexOf(
 continue;
 }
 
-
 const values =
 getFinancialRowValues(
 rawRow,
 columns
 );
 
+/*
+Conservamos filas principales
+aunque sus valores sean cero,
+porque pueden ser encabezados
+de una agrupación.
+*/
 
 if (
 values.budget === 0 &&
-values.real === 0
+values.real === 0 &&
+!labelInfo.code &&
+!isMajorFinancialCategory(
+labelInfo.name
+)
 ) {
 continue;
 }
 
+const code =
+labelInfo.code;
 
-const hierarchy =
-getPartidaHierarchy(code);
+const parent =
+isParentCode(code);
 
-
-const displayName =
-code
-? code +
-(name ? " " + name : "")
-: name;
-
+const parentCode =
+getParentCode(code);
 
 result.rows.push({
+id:
+"budget-row-" + r,
+
 code: code,
 
-name: name,
+name: labelInfo.name,
 
 displayName:
-displayName,
+labelInfo.displayName,
 
 budget:
 values.budget,
@@ -1209,23 +1147,26 @@ values.real,
 difference:
 values.difference,
 
-group:
-hierarchy.group,
-
 isParent:
-hierarchy.isParent,
+Boolean(parent),
 
-isChild:
-hierarchy.isChild
+parentCode:
+parentCode,
+
+group:
+getCodeGroup(code),
+
+isMajor:
+isMajorFinancialCategory(
+labelInfo.name
+)
 });
 }
 
 
 /*
-FALLBACK
-
-Solamente usa categorías mayores,
-nunca padre + hijos.
+Fallback únicamente si el TOTAL GENERAL
+no fue encontrado.
 */
 
 if (
@@ -1235,11 +1176,7 @@ result.real === 0
 const majorRows =
 result.rows.filter(
 function (row) {
-return (
-isMajorFinancialCategory(
-row.name
-)
-);
+return row.isMajor;
 }
 );
 
@@ -1281,15 +1218,266 @@ result.real;
 
 if (
 result.difference === 0 &&
-result.budget !== result.real
+result.budget !==
+result.real
 ) {
 result.difference =
 result.budget -
 result.real;
 }
 
-
 return result;
+}
+
+
+function getFinancialLabelInfo(
+rawRow,
+formattedRow
+) {
+let code = "";
+let name = "";
+
+const limit =
+Math.min(
+Math.max(
+rawRow.length,
+formattedRow.length
+),
+8
+);
+
+
+/*
+Primero buscamos un código
+en la versión FORMATEADA del Excel.
+Esto conserva 1.00 / 2.00 / etc.
+*/
+
+for (
+let c = 0;
+c < limit;
+c++
+) {
+const formatted =
+cleanText(
+formattedRow[c]
+);
+
+const possibleCode =
+normalizePartidaCode(
+formatted
+);
+
+if (possibleCode) {
+code = possibleCode;
+break;
+}
+}
+
+
+/*
+Buscamos el texto descriptivo.
+*/
+
+for (
+let c = 0;
+c < limit;
+c++
+) {
+const value =
+cleanText(
+formattedRow[c]
+);
+
+if (!value) {
+continue;
+}
+
+const normalized =
+normalizeText(value);
+
+const possibleCode =
+normalizePartidaCode(
+value
+);
+
+if (possibleCode) {
+continue;
+}
+
+if (
+normalized === "usd" ||
+normalized === "usd$" ||
+normalized === "us$" ||
+normalized === "dop" ||
+normalized === "rd$"
+) {
+continue;
+}
+
+/*
+Evitamos tomar valores monetarios
+como nombre.
+*/
+
+if (
+typeof rawRow[c] ===
+"number"
+) {
+continue;
+}
+
+name = value;
+break;
+}
+
+
+/*
+Puede ocurrir que código y descripción
+estén juntos:
+"2.00 Obra Civil"
+*/
+
+if (!code && name) {
+const firstSpace =
+name.indexOf(" ");
+
+if (firstSpace > 0) {
+const firstPart =
+name.substring(
+0,
+firstSpace
+);
+
+const detectedCode =
+normalizePartidaCode(
+firstPart
+);
+
+if (detectedCode) {
+code =
+detectedCode;
+
+name =
+cleanText(
+name.substring(
+firstSpace + 1
+)
+);
+}
+}
+}
+
+
+/*
+Si no encontramos nombre separado,
+buscamos un texto que contenga
+código + descripción.
+*/
+
+if (!name) {
+for (
+let c = 0;
+c < limit;
+c++
+) {
+const value =
+cleanText(
+formattedRow[c]
+);
+
+if (!value) {
+continue;
+}
+
+const firstSpace =
+value.indexOf(" ");
+
+if (firstSpace <= 0) {
+continue;
+}
+
+const possibleCode =
+normalizePartidaCode(
+value.substring(
+0,
+firstSpace
+)
+);
+
+if (possibleCode) {
+code =
+code ||
+possibleCode;
+
+name =
+cleanText(
+value.substring(
+firstSpace + 1
+)
+);
+
+break;
+}
+}
+}
+
+
+/*
+Fallback para categorías como
+EDIFICACION / EQUIPAMIENTO / TERRENO.
+*/
+
+if (!name) {
+for (
+let c = 0;
+c < limit;
+c++
+) {
+const value =
+cleanText(
+formattedRow[c]
+);
+
+if (!value) {
+continue;
+}
+
+const normalized =
+normalizeText(value);
+
+if (
+normalized === "usd" ||
+normalized === "usd$" ||
+normalized === "us$"
+) {
+continue;
+}
+
+if (
+typeof rawRow[c] ===
+"string"
+) {
+name = value;
+break;
+}
+}
+}
+
+
+const displayName =
+code
+? code +
+" " +
+name
+: name;
+
+return {
+code: code,
+name: name,
+displayName:
+cleanText(displayName)
+};
 }
 
 
@@ -1335,8 +1523,11 @@ const number =
 toNumber(value);
 
 if (
-Number.isFinite(number) &&
-Math.abs(number) > 100
+Number.isFinite(
+number
+) &&
+Math.abs(number) >
+100
 ) {
 numbers.push({
 value: number,
@@ -1346,7 +1537,9 @@ column: column
 }
 );
 
-if (numbers.length >= 3) {
+if (
+numbers.length >= 3
+) {
 const last =
 numbers.slice(-3);
 
@@ -1368,7 +1561,9 @@ last[2].column
 };
 }
 
-if (numbers.length === 2) {
+if (
+numbers.length === 2
+) {
 return {
 budget:
 numbers[0].value,
@@ -1393,7 +1588,9 @@ return null;
 }
 
 
-function detectFinancialColumns(matrix) {
+function detectFinancialColumns(
+matrix
+) {
 let budgetColumn = null;
 let realColumn = null;
 let differenceColumn = null;
@@ -1401,7 +1598,7 @@ let differenceColumn = null;
 const limit =
 Math.min(
 matrix.length,
-25
+30
 );
 
 for (
@@ -1418,21 +1615,34 @@ c < row.length;
 c++
 ) {
 const value =
-normalizeText(row[c]);
+normalizeText(
+row[c]
+);
 
 if (
-value === "presupuestado" ||
-value === "presupuesto"
+value ===
+"presupuestado" ||
+value ===
+"presupuesto" ||
+value.indexOf(
+"presupuestado"
+) >= 0
 ) {
 budgetColumn = c;
 }
 
-if (value === "real") {
+if (
+value === "real"
+) {
 realColumn = c;
 }
 
 if (
-value === "diferencia"
+value ===
+"diferencia" ||
+value.indexOf(
+"diferencia"
+) >= 0
 ) {
 differenceColumn = c;
 }
@@ -1452,42 +1662,6 @@ differenceColumn
 }
 
 
-function getFinancialLabel(row) {
-const limit =
-Math.min(
-row.length,
-6
-);
-
-for (
-let c = 0;
-c < limit;
-c++
-) {
-if (
-typeof row[c] === "string" &&
-cleanText(row[c])
-) {
-const value =
-cleanText(row[c]);
-
-const normalized =
-normalizeText(value);
-
-if (
-normalized !== "usd" &&
-normalized !== "usd$" &&
-normalized !== "us$"
-) {
-return value;
-}
-}
-}
-
-return "";
-}
-
-
 function getFinancialRowValues(
 row,
 columns
@@ -1496,9 +1670,9 @@ let budget = 0;
 let real = 0;
 let difference = 0;
 
-
 if (
-columns.budgetColumn !== null
+columns.budgetColumn !==
+null
 ) {
 budget =
 toNumber(
@@ -1508,9 +1682,9 @@ columns.budgetColumn
 );
 }
 
-
 if (
-columns.realColumn !== null
+columns.realColumn !==
+null
 ) {
 real =
 toNumber(
@@ -1520,9 +1694,9 @@ columns.realColumn
 );
 }
 
-
 if (
-columns.differenceColumn !== null
+columns.differenceColumn !==
+null
 ) {
 difference =
 toNumber(
@@ -1532,6 +1706,11 @@ columns.differenceColumn
 );
 }
 
+
+/*
+Fallback cuando el encabezado
+no se pudo identificar.
+*/
 
 if (
 budget === 0 &&
@@ -1545,16 +1724,21 @@ const number =
 toNumber(value);
 
 if (
-Number.isFinite(number) &&
+Number.isFinite(
+number
+) &&
 Math.abs(number) > 0
 ) {
-numbers.push(number);
+numbers.push(
+number
+);
 }
 }
 );
 
-
-if (numbers.length >= 3) {
+if (
+numbers.length >= 3
+) {
 const values =
 numbers.slice(-3);
 
@@ -1579,19 +1763,19 @@ real =
 values[1];
 
 difference =
-budget - real;
+budget -
+real;
 }
 }
-
 
 if (
 difference === 0 &&
 budget !== real
 ) {
 difference =
-budget - real;
+budget -
+real;
 }
-
 
 return {
 budget: budget,
@@ -1601,7 +1785,9 @@ difference: difference
 }
 
 
-function isMajorFinancialCategory(name) {
+function isMajorFinancialCategory(
+name
+) {
 const value =
 normalizeText(name);
 
@@ -1638,13 +1824,15 @@ console.warn(
 return [];
 }
 
-
 const headers =
 (matrix[headerRow] || [])
-.map(function (value) {
-return normalizeText(value);
-});
-
+.map(
+function (value) {
+return normalizeText(
+value
+);
+}
+);
 
 const columns = {
 partida:
@@ -1713,15 +1901,12 @@ headers,
 )
 };
 
-
 console.log(
 "Columnas BD:",
 columns
 );
 
-
 const result = [];
-
 
 for (
 let r = headerRow + 1;
@@ -1731,19 +1916,16 @@ r++
 const row =
 matrix[r] || [];
 
-
 const orderValue =
 getCell(
 row,
 columns.order
 );
 
-
 const status =
 classifyPurchaseStatus(
 orderValue
 );
-
 
 if (
 status === "ignore" ||
@@ -1751,7 +1933,6 @@ status === "other"
 ) {
 continue;
 }
-
 
 const partida =
 cleanText(
@@ -1761,7 +1942,6 @@ columns.partida
 )
 );
 
-
 const item =
 cleanText(
 getCell(
@@ -1769,7 +1949,6 @@ row,
 columns.item
 )
 );
-
 
 result.push({
 partida: partida,
@@ -1823,12 +2002,13 @@ status: status
 });
 }
 
-
 return result;
 }
 
 
-function findPurchaseHeaderRow(matrix) {
+function findPurchaseHeaderRow(
+matrix
+) {
 const limit =
 Math.min(
 matrix.length,
@@ -1850,7 +2030,6 @@ value
 }
 );
 
-
 const hasOrder =
 values.some(
 function (value) {
@@ -1861,7 +2040,6 @@ value.indexOf(
 );
 }
 );
-
 
 const hasPartida =
 values.some(
@@ -1874,7 +2052,6 @@ value.indexOf(
 }
 );
 
-
 const hasItem =
 values.some(
 function (value) {
@@ -1886,10 +2063,12 @@ value.indexOf(
 }
 );
 
-
 if (
 hasOrder &&
-(hasPartida || hasItem)
+(
+hasPartida ||
+hasItem
+)
 ) {
 return r;
 }
@@ -1899,18 +2078,18 @@ return -1;
 }
 
 
-function classifyPurchaseStatus(value) {
+function classifyPurchaseStatus(
+value
+) {
 const raw =
 cleanText(value);
 
 const text =
 normalizeText(raw);
 
-
 if (!text) {
 return "other";
 }
-
 
 if (
 text.indexOf(
@@ -1921,22 +2100,20 @@ text === "pendiente"
 return "pending";
 }
 
-
 if (
 text === "stock" ||
-text.indexOf("stock") >= 0
+text.indexOf(
+"stock"
+) >= 0
 ) {
 return "stock";
 }
-
 
 if (text === "plan") {
 return "ignore";
 }
 
-
 let digits = "";
-
 
 for (
 let i = 0;
@@ -1950,15 +2127,16 @@ if (
 character >= "0" &&
 character <= "9"
 ) {
-digits += character;
+digits +=
+character;
 }
 }
 
-
-if (digits.length >= 6) {
+if (
+digits.length >= 6
+) {
 return "po";
 }
-
 
 return "other";
 }
@@ -1972,25 +2150,25 @@ function parseCashflowSheet(sheet) {
 const matrix =
 sheetToMatrix(sheet);
 
-const displayMatrix =
-sheetToDisplayMatrix(sheet);
+const formattedMatrix =
+sheetToFormattedMatrix(
+sheet
+);
 
 const result = {
 periods: [],
 rows: []
 };
 
-
 if (!matrix.length) {
 return result;
 }
 
-
 const periodInfo =
 detectCashflowPeriods(
-matrix
+matrix,
+formattedMatrix
 );
-
 
 if (!periodInfo) {
 console.warn(
@@ -2000,10 +2178,8 @@ console.warn(
 return result;
 }
 
-
 result.periods =
 periodInfo.periods;
-
 
 const firstPeriodColumn =
 result.periods[0].column;
@@ -2012,41 +2188,25 @@ result.periods[0].column;
 for (
 let r =
 periodInfo.rowIndex + 1;
-
 r < matrix.length;
-
 r++
 ) {
 const rawRow =
 matrix[r] || [];
 
-const displayRow =
-displayMatrix[r] || [];
+const formattedRow =
+formattedMatrix[r] || [];
 
-
-const label =
-getCashflowLabel(
-displayRow,
+const labelInfo =
+getCashflowLabelInfo(
+rawRow,
+formattedRow,
 firstPeriodColumn
 );
 
-
-if (!label) {
+if (!labelInfo.label) {
 continue;
 }
-
-
-const code =
-extractPartidaCode(
-displayRow
-);
-
-
-const hierarchy =
-getPartidaHierarchy(
-code
-);
-
 
 const values =
 result.periods.map(
@@ -2059,7 +2219,6 @@ period.column
 }
 );
 
-
 const total =
 values.reduce(
 function (
@@ -2071,56 +2230,59 @@ return sum + value;
 0
 );
 
+/*
+Mantenemos padres aunque tengan 0,
+para conservar la jerarquía.
+*/
 
-if (total === 0) {
+if (
+total === 0 &&
+!labelInfo.isParent
+) {
 continue;
 }
-
 
 result.rows.push({
 id:
 "cashflow-" + r,
 
 code:
-code,
+labelInfo.code,
+
+name:
+labelInfo.name,
 
 label:
-label,
+labelInfo.label,
 
-values:
-values,
+values: values,
 
-total:
-total,
-
-group:
-hierarchy.group,
+total: total,
 
 isParent:
-hierarchy.isParent,
+labelInfo.isParent,
 
-isChild:
-hierarchy.isChild,
+parentCode:
+labelInfo.parentCode,
 
-parentGroup:
-hierarchy.isChild
-? hierarchy.group
-: ""
+group:
+labelInfo.group
 });
 }
-
 
 return result;
 }
 
 
-function detectCashflowPeriods(matrix) {
+function detectCashflowPeriods(
+matrix,
+formattedMatrix
+) {
 const limit =
 Math.min(
 matrix.length,
 30
 );
-
 
 for (
 let r = 0;
@@ -2132,29 +2294,76 @@ matrix[r] || [];
 
 const candidates = [];
 
-
 for (
 let c = 0;
 c < row.length;
 c++
 ) {
-const value =
-toNumber(
-row[c]
+const raw =
+row[c];
+
+const formatted =
+cleanText(
+(
+formattedMatrix[r] ||
+[]
+)[c]
 );
 
+let period = 0;
+
+/*
+Caso P1 / P2 / P3...
+*/
+
+const normalized =
+formatted.toUpperCase();
+
 if (
-Number.isInteger(value) &&
-value >= 1 &&
-value <= 60
+normalized.length >= 2 &&
+normalized[0] === "P"
+) {
+const rest =
+normalized.substring(1);
+
+if (
+isDigitsOnly(rest)
+) {
+period =
+Number(rest);
+}
+}
+
+/*
+Caso Excel con 1 / 2 / 3...
+*/
+
+if (!period) {
+const number =
+toNumber(raw);
+
+if (
+Number.isInteger(
+number
+) &&
+number >= 1 &&
+number <= 60
+) {
+period =
+number;
+}
+}
+
+if (
+period >= 1 &&
+period <= 60
 ) {
 candidates.push({
-period: value,
+period: period,
 column: c
 });
 }
 }
-
 
 if (
 candidates.length < 3
@@ -2162,76 +2371,66 @@ candidates.length < 3
 continue;
 }
 
-
 /*
-Buscamos una secuencia REAL:
-1,2,3...
+Eliminamos columnas duplicadas
+del mismo período.
 */
 
-let bestSequence = [];
-let currentSequence = [];
-
+const unique = [];
 
 candidates.forEach(
+function (candidate) {
+const exists =
+unique.some(
 function (item) {
-if (
-!currentSequence.length
-) {
-currentSequence = [
-item
-];
-
-return;
-}
-
-
-const previous =
-currentSequence[
-currentSequence.length - 1
-];
-
-
-if (
+return (
 item.period ===
-previous.period + 1
-) {
-currentSequence.push(
-item
+candidate.period
 );
-} else {
-if (
-currentSequence.length >
-bestSequence.length
-) {
-bestSequence =
-currentSequence;
 }
+);
 
-currentSequence = [
-item
-];
+if (!exists) {
+unique.push(
+candidate
+);
 }
 }
 );
 
+unique.sort(
+function (a, b) {
+return (
+a.column -
+b.column
+);
+}
+);
 
-if (
-currentSequence.length >
-bestSequence.length
+let sequential = 1;
+
+for (
+let i = 1;
+i < unique.length;
+i++
 ) {
-bestSequence =
-currentSequence;
+if (
+unique[i].period ===
+unique[i - 1].period +
+1
+) {
+sequential++;
+}
 }
 
-
 if (
-bestSequence.length >= 3
+sequential >= 3
 ) {
 return {
 rowIndex: r,
 
 periods:
-bestSequence.map(
+unique.map(
 function (item) {
 return {
 period:
@@ -2251,50 +2450,223 @@ item.period
 }
 }
 
-
 return null;
 }
 
 
-function getCashflowLabel(
-row,
+function getCashflowLabelInfo(
+rawRow,
+formattedRow,
 firstPeriodColumn
 ) {
-const parts = [];
+let code = "";
+let name = "";
 
+const limit =
+Math.min(
+firstPeriodColumn,
+Math.max(
+rawRow.length,
+formattedRow.length
+)
+);
+
+
+/*
+Buscar código separado.
+*/
 
 for (
 let c = 0;
-c < firstPeriodColumn;
+c < limit;
 c++
 ) {
 const value =
 cleanText(
-row[c]
+formattedRow[c]
 );
 
-const normalized =
-normalizeText(
+const possibleCode =
+normalizePartidaCode(
 value
 );
 
+if (possibleCode) {
+code =
+possibleCode;
+break;
+}
+}
+
+
+/*
+Buscar descripción.
+*/
+
+for (
+let c = 0;
+c < limit;
+c++
+) {
+const value =
+cleanText(
+formattedRow[c]
+);
+
+if (!value) {
+continue;
+}
+
+const normalized =
+normalizeText(value);
 
 if (
-value &&
-normalized !== "usd" &&
-normalized !== "usd$" &&
-normalized !== "us$" &&
-normalized !== "rd$" &&
-normalized !== "dop"
+normalized === "rd$" ||
+normalized === "dop" ||
+normalized === "usd" ||
+normalized === "us$"
 ) {
-parts.push(value);
+continue;
+}
+
+const possibleCode =
+normalizePartidaCode(
+value
+);
+
+if (possibleCode) {
+continue;
+}
+
+if (
+typeof rawRow[c] ===
+"number"
+) {
+continue;
+}
+
+/*
+Código + nombre en la misma celda.
+*/
+
+const firstSpace =
+value.indexOf(" ");
+
+if (
+firstSpace > 0
+) {
+const embeddedCode =
+normalizePartidaCode(
+value.substring(
+0,
+firstSpace
+)
+);
+
+if (embeddedCode) {
+code =
+code ||
+embeddedCode;
+
+name =
+cleanText(
+value.substring(
+firstSpace + 1
+)
+);
+
+break;
+}
+}
+
+name = value;
+break;
+}
+
+
+/*
+Si código y descripción estaban juntos
+pero el ciclo anterior no los capturó.
+*/
+
+if (!code) {
+for (
+let c = 0;
+c < limit;
+c++
+) {
+const value =
+cleanText(
+formattedRow[c]
+);
+
+const firstSpace =
+value.indexOf(" ");
+
+if (
+firstSpace <= 0
+) {
+continue;
+}
+
+const embeddedCode =
+normalizePartidaCode(
+value.substring(
+0,
+firstSpace
+)
+);
+
+if (embeddedCode) {
+code =
+embeddedCode;
+
+if (!name) {
+name =
+cleanText(
+value.substring(
+firstSpace + 1
+)
+);
+}
+
+break;
+}
 }
 }
 
 
-return parts
-.join(" ")
-.trim();
+const parent =
+isParentCode(code);
+
+const parentCode =
+getParentCode(code);
+
+const label =
+cleanText(
+code
+? code +
+" " +
+name
+: name
+);
+
+return {
+code: code,
+
+name: name,
+
+label: label,
+
+isParent:
+Boolean(parent),
+
+parentCode:
+parentCode,
+
+group:
+getCodeGroup(code)
+};
 }
 
 
@@ -2314,10 +2686,8 @@ const monthNames = [
 "Dic"
 ];
 
-
 const index =
 period - 1;
-
 
 const year =
 2025 +
@@ -2325,10 +2695,8 @@ Math.floor(
 index / 12
 );
 
-
 const month =
 index % 12;
-
 
 return (
 monthNames[month] +
@@ -2393,7 +2761,9 @@ formatUSD(difference)
 
 setText(
 "homeExecution",
-formatPercent(execution)
+formatPercent(
+execution
+)
 );
 
 setSavings(
@@ -2419,12 +2789,16 @@ formatUSD(difference)
 
 setText(
 "executiveExecution",
-formatPercent(execution)
+formatPercent(
+execution
+)
 );
 
 setText(
 "executiveProgressText",
-formatPercent(execution)
+formatPercent(
+execution
+)
 );
 
 setSavings(
@@ -2450,7 +2824,9 @@ formatUSD(difference)
 
 setText(
 "budgetExecution",
-formatPercent(execution)
+formatPercent(
+execution
+)
 );
 
 setSavings(
@@ -2463,7 +2839,6 @@ const progress =
 document.getElementById(
 "executiveProgressBar"
 );
-
 
 if (progress) {
 const percent =
@@ -2479,16 +2854,20 @@ progress.style.width =
 percent + "%";
 }
 
-
 renderBudgetTable();
 renderHomeCategoryTable();
 renderFinancialCharts();
 }
 
 
-function setSavings(id, value) {
+function setSavings(
+id,
+value
+) {
 const element =
-document.getElementById(id);
+document.getElementById(
+id
+);
 
 if (!element) {
 return;
@@ -2499,7 +2878,6 @@ formatDOP(
 Math.abs(value)
 );
 
-
 const card =
 element.closest(
 ".kpi-card"
@@ -2509,12 +2887,10 @@ if (!card) {
 return;
 }
 
-
 const label =
 card.querySelector(
 ".kpi-label"
 );
-
 
 if (label) {
 label.textContent =
@@ -2526,7 +2902,7 @@ value >= 0
 
 
 /* =========================================================
-TABLA PRESUPUESTO - DINÁMICA
+TABLA PRESUPUESTO JERÁRQUICA
 ========================================================= */
 
 function renderBudgetTable() {
@@ -2539,12 +2915,10 @@ if (!tbody) {
 return;
 }
 
-
 const input =
 document.getElementById(
 "budgetSearch"
 );
-
 
 const search =
 normalizeText(
@@ -2553,78 +2927,86 @@ input
 : ""
 );
 
-
 let rows =
 financialData.rows;
 
 
 /*
-BÚSQUEDA
-
-Si encuentra 2.03,
-también mantiene visible 2.00.
+BUSCADOR:
+Si encuentra una subpartida,
+también muestra su padre.
 */
 
 if (search) {
-const matchingGroups =
+const matchingCodes =
 new Set();
-
 
 rows.forEach(
 function (row) {
-const searchable =
+const text =
 normalizeText(
-(row.displayName || row.name) +
+(
+row.displayName ||
+row.name ||
+""
+) +
 " " +
-(row.code || "")
+(
+row.code ||
+""
+)
 );
-
 
 if (
-searchable.indexOf(
+text.indexOf(
 search
-) >= 0 &&
-row.group
+) >= 0
 ) {
-matchingGroups.add(
-row.group
+if (row.code) {
+matchingCodes.add(
+row.code
 );
 }
-}
-);
 
+if (
+row.parentCode
+) {
+matchingCodes.add(
+row.parentCode
+);
+}
+}
+}
+);
 
 rows =
 rows.filter(
 function (row) {
-const searchable =
+const text =
 normalizeText(
-(row.displayName || row.name) +
+(
+row.displayName ||
+row.name ||
+""
+) +
 " " +
-(row.code || "")
+(
+row.code ||
+""
+)
 );
 
-
-if (
-searchable.indexOf(
+return (
+text.indexOf(
 search
-) >= 0
-) {
-return true;
-}
-
-
-if (
-row.group &&
-matchingGroups.has(
-row.group
+) >= 0 ||
+(
+row.code &&
+matchingCodes.has(
+row.code
 )
-) {
-return true;
-}
-
-
-return false;
+)
+);
 }
 );
 }
@@ -2637,9 +3019,7 @@ emptyRow(5);
 return;
 }
 
-
 let html = "";
-
 
 rows.forEach(
 function (row) {
@@ -2649,27 +3029,28 @@ row.budget !== 0
 row.budget
 : 0;
 
-
-const label =
+const display =
 row.displayName ||
-row.name;
+row.name ||
+"";
 
 
-/* PADRE X.00 */
+/* -----------------------------------------------
+PADRE X.00
+----------------------------------------------- */
 
 if (row.isParent) {
 html +=
-'<tr class="budget-group-row" data-budget-group="' +
-escapeHTML(
-row.group
-) +
-'">' +
+'<tr class="budget-group-row">' +
 
 "<td>" +
 
-'<button class="budget-toggle" type="button" data-target="' +
+'<button ' +
+'class="budget-toggle" ' +
+'type="button" ' +
+'data-target="' +
 escapeHTML(
-row.group
+row.code
 ) +
 '">' +
 
@@ -2677,7 +3058,7 @@ row.group
 
 "<span>" +
 escapeHTML(
-label
+display
 ) +
 "</span>" +
 
@@ -2715,19 +3096,25 @@ return;
 }
 
 
-/* HIJO X.01, X.02... */
+/* -----------------------------------------------
+HIJO X.01 / X.02 / X.03...
+----------------------------------------------- */
 
-if (row.isChild) {
+if (
+row.code &&
+row.parentCode
+) {
 html +=
-'<tr class="budget-child-row" data-budget-parent="' +
+'<tr class="budget-child-row" ' +
+'data-parent-code="' +
 escapeHTML(
-row.group
+row.parentCode
 ) +
 '">' +
 
 '<td class="budget-child-label">' +
 escapeHTML(
-label
+display
 ) +
 "</td>" +
 
@@ -2761,14 +3148,16 @@ return;
 }
 
 
-/* FILAS NORMALES */
+/* -----------------------------------------------
+EDIFICACION / EQUIPAMIENTO / TERRENO / ETC.
+----------------------------------------------- */
 
 html +=
 '<tr class="budget-regular-row">' +
 
 "<td>" +
 escapeHTML(
-label
+display
 ) +
 "</td>" +
 
@@ -2800,15 +3189,26 @@ execution
 }
 );
 
+tbody.innerHTML =
+html;
 
-tbody.innerHTML = html;
+
+/*
+Si estamos buscando,
+mostramos todos los resultados.
+*/
+
+if (search) {
+toggleAllBudget(true);
+}
 
 
-tbody
-.querySelectorAll(
+const buttons =
+tbody.querySelectorAll(
 ".budget-toggle"
-)
-.forEach(
+);
+
+buttons.forEach(
 function (button) {
 button.addEventListener(
 "click",
@@ -2823,44 +3223,57 @@ button
 }
 
 
-function toggleBudgetGroup(button) {
-const group =
+function toggleBudgetGroup(
+button
+) {
+const parentCode =
 button.dataset.target;
-
 
 const children =
 document.querySelectorAll(
-'#budgetTable .budget-child-row[data-budget-parent="' +
-group +
-'"]'
+".budget-child-row"
 );
 
+let hide = false;
 
-if (!children.length) {
-return;
-}
-
-
-let hide =
-children[0].style.display !==
+for (
+let i = 0;
+i < children.length;
+i++
+) {
+if (
+children[i].dataset
+.parentCode ===
+parentCode
+) {
+hide =
+children[i].style
+.display !==
 "none";
 
+break;
+}
+}
 
 children.forEach(
 function (child) {
+if (
+child.dataset
+.parentCode ===
+parentCode
+) {
 child.style.display =
 hide
 ? "none"
 : "";
 }
+}
 );
-
 
 const symbol =
 button.querySelector(
 ".toggle-symbol"
 );
-
 
 if (symbol) {
 symbol.textContent =
@@ -2871,10 +3284,12 @@ hide
 }
 
 
-function toggleAllBudget(expand) {
+function toggleAllBudget(
+expand
+) {
 document
 .querySelectorAll(
-"#budgetTable .budget-child-row"
+".budget-child-row"
 )
 .forEach(
 function (row) {
@@ -2885,10 +3300,9 @@ expand
 }
 );
 
-
 document
 .querySelectorAll(
-"#budgetTable .budget-toggle .toggle-symbol"
+".budget-toggle .toggle-symbol"
 )
 .forEach(
 function (symbol) {
@@ -2901,6 +3315,10 @@ expand
 }
 
 
+/* =========================================================
+TABLA HOME
+========================================================= */
+
 function renderHomeCategoryTable() {
 const tbody =
 document.querySelector(
@@ -2911,18 +3329,12 @@ if (!tbody) {
 return;
 }
 
-
 let rows =
 financialData.rows.filter(
 function (row) {
-return (
-isMajorFinancialCategory(
-row.name
-)
-);
+return row.isMajor;
 }
 );
-
 
 if (!rows.length) {
 rows =
@@ -2930,16 +3342,13 @@ financialData.rows
 .filter(
 function (row) {
 return (
-!row.isChild
+row.isParent ||
+!row.code
 );
 }
 )
-.slice(
-0,
-10
-);
+.slice(0, 10);
 }
-
 
 if (!rows.length) {
 tbody.innerHTML =
@@ -2947,7 +3356,6 @@ emptyRow(5);
 
 return;
 }
-
 
 tbody.innerHTML =
 rows.map(
@@ -2957,7 +3365,6 @@ row.budget !== 0
 ? row.real /
 row.budget
 : 0;
-
 
 return (
 "<tr>" +
@@ -3035,7 +3442,6 @@ row.status ===
 }
 );
 
-
 const poValue =
 po.reduce(
 function (
@@ -3049,7 +3455,6 @@ row.netDOP
 },
 0
 );
-
 
 const pendingValue =
 pending.reduce(
@@ -3065,10 +3470,8 @@ row.budgetDOP
 0
 );
 
-
 const pendingCategories =
 new Set();
-
 
 pending.forEach(
 function (row) {
@@ -3140,7 +3543,6 @@ pendingValue
 )
 );
 
-
 renderPurchaseTable();
 renderPendingTable();
 renderPurchaseCharts();
@@ -3157,7 +3559,6 @@ if (!tbody) {
 return;
 }
 
-
 const searchInput =
 document.getElementById(
 "purchaseSearch"
@@ -3168,7 +3569,6 @@ document.getElementById(
 "purchaseStatusFilter"
 );
 
-
 const search =
 normalizeText(
 searchInput
@@ -3176,12 +3576,10 @@ searchInput
 : ""
 );
 
-
 const status =
 filterInput
 ? filterInput.value
 : "all";
-
 
 const rows =
 purchaseData.filter(
@@ -3193,11 +3591,9 @@ row.status !== status
 return false;
 }
 
-
 if (!search) {
 return true;
 }
-
 
 const text =
 normalizeText(
@@ -3208,7 +3604,6 @@ row.item +
 row.order
 );
 
-
 return (
 text.indexOf(
 search
@@ -3217,14 +3612,12 @@ search
 }
 );
 
-
 if (!rows.length) {
 tbody.innerHTML =
 emptyRow(7);
 
 return;
 }
-
 
 tbody.innerHTML =
 rows.map(
@@ -3292,12 +3685,10 @@ if (!tbody) {
 return;
 }
 
-
 const input =
 document.getElementById(
 "pendingSearch"
 );
-
 
 const search =
 normalizeText(
@@ -3305,7 +3696,6 @@ input
 ? input.value
 : ""
 );
-
 
 const rows =
 purchaseData.filter(
@@ -3317,11 +3707,9 @@ row.status !==
 return false;
 }
 
-
 if (!search) {
 return true;
 }
-
 
 const text =
 normalizeText(
@@ -3329,7 +3717,6 @@ row.partida +
 " " +
 row.item
 );
-
 
 return (
 text.indexOf(
@@ -3339,14 +3726,12 @@ search
 }
 );
 
-
 if (!rows.length) {
 tbody.innerHTML =
 emptyRow(5);
 
 return;
 }
-
 
 tbody.innerHTML =
 rows.map(
@@ -3392,7 +3777,9 @@ row.comment
 }
 
 
-function purchaseStatusBadge(status) {
+function purchaseStatusBadge(
+status
+) {
 if (status === "po") {
 return (
 '<span class="status-badge status-po">' +
@@ -3400,7 +3787,6 @@ return (
 "</span>"
 );
 }
-
 
 if (
 status === "pending"
@@ -3412,8 +3798,9 @@ return (
 );
 }
 
-
-if (status === "stock") {
+if (
+status === "stock"
+) {
 return (
 '<span class="status-badge status-stock">' +
 "Stock" +
@@ -3421,13 +3808,12 @@ return (
 );
 }
 
-
 return "";
 }
 
 
 /* =========================================================
-FLUJO DE CAJA - DINÁMICO
+FLUJO DE CAJA - RENDER
 ========================================================= */
 
 function renderCashflow() {
@@ -3437,24 +3823,20 @@ cashflowData.periods;
 const rows =
 cashflowData.rows;
 
-
 const total =
 calculateCashflowTotal(
 rows
 );
-
 
 setText(
 "cashflowTotal",
 formatDOP(total)
 );
 
-
 setText(
 "cashflowPeriodCount",
 periods.length
 );
-
 
 const parents =
 rows.filter(
@@ -3462,7 +3844,6 @@ function (row) {
 return row.isParent;
 }
 );
-
 
 setText(
 "cashflowCategoryCount",
@@ -3470,13 +3851,14 @@ parents.length ||
 rows.length
 );
 
-
 renderCashflowTable();
 renderCashflowChart();
 }
 
 
-function calculateCashflowTotal(rows) {
+function calculateCashflowTotal(
+rows
+) {
 const parents =
 rows.filter(
 function (row) {
@@ -3484,12 +3866,15 @@ return row.isParent;
 }
 );
 
+/*
+Si existen padres X.00 usamos esos
+para evitar sumar padre + hijos.
+*/
 
 const source =
 parents.length
 ? parents
 : rows;
-
 
 return source.reduce(
 function (
@@ -3517,7 +3902,6 @@ document.getElementById(
 "cashflowTableBody"
 );
 
-
 if (
 !thead ||
 !tbody
@@ -3525,14 +3909,12 @@ if (
 return;
 }
 
-
 const periods =
 cashflowData.periods;
 
-
 let header =
-"<tr><th>Partida</th>";
-
+"<tr>" +
+"<th>Partida</th>";
 
 periods.forEach(
 function (period) {
@@ -3545,10 +3927,11 @@ period.label
 }
 );
 
-
 header +=
-'<th class="number">Total</th></tr>';
-
+'<th class="number">' +
+"Total" +
+"</th>" +
+"</tr>";
 
 thead.innerHTML =
 header;
@@ -3568,25 +3951,25 @@ return;
 
 let html = "";
 
-
 cashflowData.rows.forEach(
 function (row) {
 
-/* PADRE X.00 */
+/* -----------------------------------------------
+PADRE X.00
+----------------------------------------------- */
 
 if (row.isParent) {
 html +=
-'<tr class="cashflow-group-row" data-cashflow-group="' +
-escapeHTML(
-row.group
-) +
-'">' +
+'<tr class="cashflow-group-row">' +
 
 "<td>" +
 
-'<button class="cashflow-toggle" type="button" data-target="' +
+'<button ' +
+'class="cashflow-toggle" ' +
+'type="button" ' +
+'data-target="' +
 escapeHTML(
-row.group
+row.code
 ) +
 '">' +
 
@@ -3602,7 +3985,6 @@ row.label
 
 "</td>";
 
-
 row.values.forEach(
 function (value) {
 html +=
@@ -3613,7 +3995,6 @@ value
 "</td>";
 }
 );
-
 
 html +=
 '<td class="number">' +
@@ -3628,13 +4009,19 @@ return;
 }
 
 
-/* HIJO X.01 / X.02 */
+/* -----------------------------------------------
+HIJO X.01 / X.02...
+----------------------------------------------- */
 
-if (row.isChild) {
+if (
+row.code &&
+row.parentCode
+) {
 html +=
-'<tr class="cashflow-child-row" data-cashflow-parent="' +
+'<tr class="cashflow-child-row" ' +
+'data-parent-code="' +
 escapeHTML(
-row.parentGroup
+row.parentCode
 ) +
 '">' +
 
@@ -3644,7 +4031,6 @@ row.label
 ) +
 "</td>";
 
-
 row.values.forEach(
 function (value) {
 html +=
@@ -3655,7 +4041,6 @@ value
 "</td>";
 }
 );
-
 
 html +=
 '<td class="number">' +
@@ -3670,17 +4055,18 @@ return;
 }
 
 
-/* FILA SIN JERARQUÍA */
+/* -----------------------------------------------
+FILA NO NUMERADA
+----------------------------------------------- */
 
 html +=
-'<tr class="cashflow-regular-row">' +
+"<tr>" +
 
 "<td>" +
 escapeHTML(
 row.label
 ) +
 "</td>";
-
 
 row.values.forEach(
 function (value) {
@@ -3693,7 +4079,6 @@ value
 }
 );
 
-
 html +=
 '<td class="number">' +
 formatDOPCompact(
@@ -3705,15 +4090,16 @@ row.total
 }
 );
 
+tbody.innerHTML =
+html;
 
-tbody.innerHTML = html;
 
-
-tbody
-.querySelectorAll(
+const buttons =
+tbody.querySelectorAll(
 ".cashflow-toggle"
-)
-.forEach(
+);
+
+buttons.forEach(
 function (button) {
 button.addEventListener(
 "click",
@@ -3728,44 +4114,57 @@ button
 }
 
 
-function toggleCashflowGroup(button) {
-const group =
+function toggleCashflowGroup(
+button
+) {
+const parentCode =
 button.dataset.target;
-
 
 const children =
 document.querySelectorAll(
-'#cashflowTableBody .cashflow-child-row[data-cashflow-parent="' +
-group +
-'"]'
+".cashflow-child-row"
 );
 
+let hide = false;
 
-if (!children.length) {
-return;
-}
-
-
-const hide =
-children[0].style.display !==
+for (
+let i = 0;
+i < children.length;
+i++
+) {
+if (
+children[i].dataset
+.parentCode ===
+parentCode
+) {
+hide =
+children[i].style
+.display !==
 "none";
 
+break;
+}
+}
 
 children.forEach(
 function (child) {
+if (
+child.dataset
+.parentCode ===
+parentCode
+) {
 child.style.display =
 hide
 ? "none"
 : "";
 }
+}
 );
-
 
 const symbol =
 button.querySelector(
 ".toggle-symbol"
 );
-
 
 if (symbol) {
 symbol.textContent =
@@ -3776,10 +4175,12 @@ hide
 }
 
 
-function toggleAllCashflow(expand) {
+function toggleAllCashflow(
+expand
+) {
 document
 .querySelectorAll(
-"#cashflowTableBody .cashflow-child-row"
+".cashflow-child-row"
 )
 .forEach(
 function (row) {
@@ -3790,10 +4191,9 @@ expand
 }
 );
 
-
 document
 .querySelectorAll(
-"#cashflowTableBody .cashflow-toggle .toggle-symbol"
+".cashflow-toggle .toggle-symbol"
 )
 .forEach(
 function (symbol) {
@@ -3820,33 +4220,26 @@ if (!tbody) {
 return;
 }
 
-
 let rows =
 financialData.rows.filter(
 function (row) {
-return (
-isMajorFinancialCategory(
-row.name
-)
-);
+return row.isMajor;
 }
 );
-
 
 if (!rows.length) {
 rows =
 financialData.rows
 .filter(
 function (row) {
-return !row.isChild;
-}
-)
-.slice(
-0,
-15
+return (
+row.isParent ||
+!row.code
 );
 }
-
+)
+.slice(0, 15);
+}
 
 if (!rows.length) {
 tbody.innerHTML =
@@ -3855,13 +4248,14 @@ emptyRow(7);
 return;
 }
 
-
 tbody.innerHTML =
 rows.map(
 function (row) {
 const related =
 purchaseData.filter(
-function (purchase) {
+function (
+purchase
+) {
 return matchPartida(
 purchase.partida,
 row.name
@@ -3869,16 +4263,15 @@ row.name
 }
 );
 
-
 const po =
 related.filter(
 function (item) {
 return (
-item.status === "po"
+item.status ===
+"po"
 );
 }
 ).length;
-
 
 const pending =
 related.filter(
@@ -3890,7 +4283,6 @@ item.status ===
 }
 ).length;
 
-
 const stock =
 related.filter(
 function (item) {
@@ -3901,13 +4293,11 @@ item.status ===
 }
 ).length;
 
-
 const execution =
 row.budget !== 0
 ? row.real /
 row.budget
 : 0;
-
 
 return (
 "<tr>" +
@@ -3957,13 +4347,15 @@ stock +
 }
 
 
-function matchPartida(a, b) {
+function matchPartida(
+a,
+b
+) {
 const left =
 normalizeText(a);
 
 const right =
 normalizeText(b);
-
 
 if (
 !left ||
@@ -3972,16 +4364,19 @@ if (
 return false;
 }
 
-
 return (
-left.indexOf(right) >= 0 ||
-right.indexOf(left) >= 0
+left.indexOf(
+right
+) >= 0 ||
+right.indexOf(
+left
+) >= 0
 );
 }
 
 
 /* =========================================================
-GRÁFICAS
+GRÁFICAS FINANCIERAS
 ========================================================= */
 
 function renderFinancialCharts() {
@@ -4019,29 +4414,26 @@ formatUSD
 let rows =
 financialData.rows.filter(
 function (row) {
-return (
-isMajorFinancialCategory(
-row.name
-)
-);
+return row.isMajor;
 }
 );
-
 
 if (!rows.length) {
 rows =
 financialData.rows
 .filter(
 function (row) {
-return !row.isChild;
+return row.isParent;
 }
 )
-.slice(
-0,
-10
-);
+.slice(0, 10);
 }
 
+if (!rows.length) {
+rows =
+financialData.rows
+.slice(0, 10);
+}
 
 const labels =
 rows.map(
@@ -4053,7 +4445,6 @@ row.name
 }
 );
 
-
 const budgets =
 rows.map(
 function (row) {
@@ -4061,14 +4452,12 @@ return row.budget;
 }
 );
 
-
 const reals =
 rows.map(
 function (row) {
 return row.real;
 }
 );
-
 
 [
 "executiveCategoryChart",
@@ -4114,6 +4503,10 @@ formatUSD
 }
 
 
+/* =========================================================
+GRÁFICAS COMPRAS
+========================================================= */
+
 function renderPurchaseCharts() {
 const po =
 purchaseData.filter(
@@ -4123,7 +4516,6 @@ row.status === "po"
 );
 }
 ).length;
-
 
 const pending =
 purchaseData.filter(
@@ -4135,7 +4527,6 @@ row.status ===
 }
 ).length;
 
-
 const stock =
 purchaseData.filter(
 function (row) {
@@ -4145,7 +4536,6 @@ row.status ===
 );
 }
 ).length;
-
 
 [
 "homePurchaseChart",
@@ -4195,10 +4585,13 @@ position:
 }
 
 
+/* =========================================================
+GRÁFICA FLUJO
+========================================================= */
+
 function renderCashflowChart() {
 const periods =
 cashflowData.periods;
-
 
 const parentRows =
 cashflowData.rows.filter(
@@ -4207,12 +4600,10 @@ return row.isParent;
 }
 );
 
-
 const source =
 parentRows.length
 ? parentRows
 : cashflowData.rows;
-
 
 const values =
 periods.map(
@@ -4228,7 +4619,9 @@ row
 return (
 total +
 (
-row.values[index] ||
+row.values[
+index
+] ||
 0
 )
 );
@@ -4237,7 +4630,6 @@ row.values[index] ||
 );
 }
 );
-
 
 createChart(
 "cashflowChart",
@@ -4272,13 +4664,18 @@ formatDOP
 }
 
 
+/* =========================================================
+CHART.JS
+========================================================= */
+
 function createChart(
 id,
 config
 ) {
 const canvas =
-document.getElementById(id);
-
+document.getElementById(
+id
+);
 
 if (
 !canvas ||
@@ -4288,11 +4685,9 @@ typeof Chart ===
 return;
 }
 
-
 if (charts[id]) {
 charts[id].destroy();
 }
-
 
 charts[id] =
 new Chart(
@@ -4313,15 +4708,17 @@ false,
 
 plugins: {
 legend: {
-position: "bottom"
+position:
+"bottom"
 },
 
 tooltip: {
 callbacks: {
 label:
-function (context) {
+function (
+context
+) {
 let value = 0;
-
 
 if (
 context.parsed &&
@@ -4340,7 +4737,6 @@ value =
 context.parsed;
 }
 
-
 return (
 (
 context.dataset
@@ -4348,7 +4744,9 @@ context.dataset
 ""
 ) +
 ": " +
-formatter(value)
+formatter(
+value
+)
 );
 }
 }
@@ -4357,11 +4755,14 @@ formatter(value)
 
 scales: {
 y: {
-beginAtZero: true,
+beginAtZero:
+true,
 
 ticks: {
 callback:
-function (value) {
+function (
+value
+) {
 return compactNumber(
 value
 );
@@ -4389,7 +4790,6 @@ i++
 const header =
 headers[i];
 
-
 for (
 let c = 0;
 c < candidates.length;
@@ -4400,9 +4800,9 @@ normalizeText(
 candidates[c]
 );
 
-
 if (
-header === candidate ||
+header ===
+candidate ||
 header.indexOf(
 candidate
 ) >= 0
@@ -4411,7 +4811,6 @@ return i;
 }
 }
 }
-
 
 return -1;
 }
@@ -4430,7 +4829,6 @@ word
 }
 );
 
-
 for (
 let i = 0;
 i < headers.length;
@@ -4441,10 +4839,10 @@ headers[i];
 
 let valid = true;
 
-
 for (
 let w = 0;
-w < normalizedWords.length;
+w <
+normalizedWords.length;
 w++
 ) {
 if (
@@ -4457,12 +4855,10 @@ break;
 }
 }
 
-
 if (valid) {
 return i;
 }
 }
-
 
 return -1;
 }
@@ -4480,7 +4876,6 @@ index < 0
 return null;
 }
 
-
 return row[index];
 }
 
@@ -4496,7 +4891,6 @@ value === undefined
 ) {
 return "";
 }
-
 
 return String(value)
 .trim()
@@ -4530,9 +4924,9 @@ value === ""
 return 0;
 }
 
-
 if (
-typeof value === "number"
+typeof value ===
+"number"
 ) {
 return Number.isFinite(
 value
@@ -4541,18 +4935,14 @@ value
 : 0;
 }
 
-
 let text =
 String(value).trim();
-
 
 if (!text) {
 return 0;
 }
 
-
 let negative = false;
-
 
 if (
 text.startsWith("(") &&
@@ -4567,22 +4957,43 @@ text.length - 1
 );
 }
 
-
 text =
 text
-.replaceAll("RD$", "")
-.replaceAll("USD$", "")
-.replaceAll("US$", "")
-.replaceAll("DOP", "")
-.replaceAll("USD", "")
-.replaceAll("$", "")
-.replaceAll(",", "")
-.replaceAll(" ", "")
+.replaceAll(
+"RD$",
+""
+)
+.replaceAll(
+"USD$",
+""
+)
+.replaceAll(
+"US$",
+""
+)
+.replaceAll(
+"DOP",
+""
+)
+.replaceAll(
+"USD",
+""
+)
+.replaceAll(
+"$",
+""
+)
+.replaceAll(
+",",
+""
+)
+.replaceAll(
+" ",
+""
+)
 .trim();
 
-
 let cleaned = "";
-
 
 for (
 let i = 0;
@@ -4592,7 +5003,6 @@ i++
 const character =
 text[i];
 
-
 if (
 (
 character >= "0" &&
@@ -4601,10 +5011,10 @@ character <= "9"
 character === "." ||
 character === "-"
 ) {
-cleaned += character;
+cleaned +=
+character;
 }
 }
-
 
 if (
 !cleaned ||
@@ -4614,17 +5024,16 @@ cleaned === "."
 return 0;
 }
 
-
 const number =
 Number(cleaned);
 
-
 if (
-!Number.isFinite(number)
+!Number.isFinite(
+number
+)
 ) {
 return 0;
 }
-
 
 return negative
 ? -Math.abs(number)
@@ -4672,15 +5081,15 @@ maximumFractionDigits:
 }
 
 
-function formatDOPCompact(value) {
+function formatDOPCompact(
+value
+) {
 const number =
 Number(value || 0);
-
 
 if (number === 0) {
 return "—";
 }
-
 
 return (
 "RD$ " +
@@ -4698,10 +5107,13 @@ maximumFractionDigits:
 }
 
 
-function formatPercent(value) {
+function formatPercent(
+value
+) {
 return (
 Number(
-(value || 0) * 100
+(value || 0) *
+100
 ).toLocaleString(
 "en-US",
 {
@@ -4734,7 +5146,6 @@ function compactNumber(value) {
 const number =
 Number(value || 0);
 
-
 if (
 Math.abs(number) >=
 1000000
@@ -4747,7 +5158,6 @@ number /
 "M"
 );
 }
-
 
 if (
 Math.abs(number) >=
@@ -4762,7 +5172,6 @@ number /
 );
 }
 
-
 return number.toFixed(0);
 }
 
@@ -4776,18 +5185,16 @@ if (!value) {
 return null;
 }
 
-
 const parts =
-String(value)
-.split("-");
-
+String(value).split(
+"-"
+);
 
 if (
 parts.length !== 3
 ) {
 return null;
 }
-
 
 const year =
 Number(parts[0]);
@@ -4798,7 +5205,6 @@ Number(parts[1]);
 const day =
 Number(parts[2]);
 
-
 if (
 !year ||
 !month ||
@@ -4807,14 +5213,12 @@ if (
 return null;
 }
 
-
 const date =
 new Date(
 year,
 month - 1,
 day
 );
-
 
 if (
 Number.isNaN(
@@ -4824,21 +5228,21 @@ date.getTime()
 return null;
 }
 
-
 return date;
 }
 
 
 function formatDate(date) {
 if (
-!(date instanceof Date) ||
+!(
+date instanceof Date
+) ||
 Number.isNaN(
 date.getTime()
 )
 ) {
 return "—";
 }
-
 
 return date.toLocaleDateString(
 "es-DO",
@@ -4856,16 +5260,17 @@ if (!value) {
 return "";
 }
 
-
 if (
 value instanceof Date
 ) {
-return formatDate(value);
+return formatDate(
+value
+);
 }
 
-
 if (
-typeof value === "number" &&
+typeof value ===
+"number" &&
 typeof XLSX !==
 "undefined"
 ) {
@@ -4873,7 +5278,6 @@ const parsed =
 XLSX.SSF.parse_date_code(
 value
 );
-
 
 if (parsed) {
 return formatDate(
@@ -4886,19 +5290,18 @@ parsed.d
 }
 }
 
-
 const date =
 new Date(value);
-
 
 if (
 !Number.isNaN(
 date.getTime()
 )
 ) {
-return formatDate(date);
+return formatDate(
+date
+);
 }
-
 
 return cleanText(value);
 }
@@ -4912,13 +5315,11 @@ function escapeHTML(value) {
 let text =
 cleanText(value);
 
-
 text =
 text.replaceAll(
 "&",
 "&amp;"
 );
-
 
 text =
 text.replaceAll(
@@ -4926,13 +5327,11 @@ text.replaceAll(
 "&lt;"
 );
 
-
 text =
 text.replaceAll(
 ">",
 "&gt;"
 );
-
 
 text =
 text.replaceAll(
@@ -4940,13 +5339,11 @@ text.replaceAll(
 "&quot;"
 );
 
-
 text =
 text.replaceAll(
 "'",
 "&#039;"
 );
-
 
 return text;
 }
@@ -4955,15 +5352,15 @@ return text;
 function emptyRow(columns) {
 return (
 "<tr>" +
-
 '<td colspan="' +
 columns +
-'" style="text-align:center;padding:28px;color:#7a8581;">' +
-
+'" style="' +
+"text-align:center;" +
+"padding:28px;" +
+"color:#7a8581;" +
+'">' +
 "No hay datos para mostrar." +
-
 "</td>" +
-
 "</tr>"
 );
 }
@@ -4982,15 +5379,12 @@ document.getElementById(
 "dashboardMessage"
 );
 
-
 if (!element) {
 return;
 }
 
-
 element.textContent =
 message;
-
 
 element.className =
 "dashboard-message " +
@@ -5004,15 +5398,11 @@ document.getElementById(
 "dashboardMessage"
 );
 
-
 if (!element) {
 return;
 }
 
-
-element.textContent =
-"";
-
+element.textContent = "";
 
 element.className =
 "dashboard-message hidden";
@@ -5032,12 +5422,10 @@ document.getElementById(
 "loadingOverlay"
 );
 
-
 const text =
 document.getElementById(
 "loadingText"
 );
-
 
 if (text) {
 text.textContent =
@@ -5045,11 +5433,9 @@ message ||
 "Leyendo archivo Excel";
 }
 
-
 if (!overlay) {
 return;
 }
-
 
 if (visible) {
 overlay.classList.remove(
@@ -5072,13 +5458,13 @@ id,
 value
 ) {
 const element =
-document.getElementById(id);
-
+document.getElementById(
+id
+);
 
 if (!element) {
 return;
 }
-
 
 element.textContent =
 value === null ||
@@ -5100,9 +5486,7 @@ difference: 0,
 rows: []
 };
 
-
 purchaseData = [];
-
 
 cashflowData = {
 periods: [],
@@ -5114,9 +5498,11 @@ rows: []
 "homeBudget",
 "homeReal",
 "homeDifference",
+
 "executiveBudget",
 "executiveReal",
 "executiveDifference",
+
 "budgetTotal",
 "realTotal",
 "differenceTotal"
@@ -5150,13 +5536,17 @@ id,
 [
 "homePOCount",
 "homePendingCount",
+
 "executivePO",
 "executivePending",
+
 "purchasePOCount",
 "purchasePendingCount",
 "purchaseStockCount",
+
 "pendingTotal",
 "pendingCategoryCount",
+
 "cashflowCategoryCount",
 "cashflowPeriodCount"
 ].forEach(
@@ -5188,7 +5578,6 @@ const progress =
 document.getElementById(
 "executiveProgressBar"
 );
-
 
 if (progress) {
 progress.style.width =
