@@ -1523,5 +1523,316 @@ box-shadow: none;
 
 break-inside: avoid;
 }
+/* =========================================================
+FIX VISUAL FINAL - DASHBOARD CAPEX
+========================================================= */
+
+@media screen and (min-width: 700px) {
+
+.sidebar {
+display: flex !important;
+position: fixed !important;
+top: 0 !important;
+left: 0 !important;
+bottom: 0 !important;
+
+width: 255px !important;
+height: 100vh !important;
+
+flex-direction: column !important;
+
+background:
+linear-gradient(
+180deg,
+#214c40 0%,
+#173b32 100%
+) !important;
+
+color: white !important;
+
+padding: 24px 18px !important;
+
+z-index: 999 !important;
+}
+
+
+.main-content {
+display: block !important;
+
+width: auto !important;
+
+margin-left: 255px !important;
+
+padding:
+0 30px 35px !important;
+
+background: #f4f6f5 !important;
+
+min-height: 100vh !important;
+}
+
+
+.app-shell {
+display: block !important;
+
+width: 100% !important;
+
+min-height: 100vh !important;
+
+background: #f4f6f5 !important;
+}
 
 }
+
+
+/* FONDO GENERAL */
+
+html,
+body {
+background: #f4f6f5 !important;
+}
+
+
+/* TARJETAS KPI */
+
+.kpi-card {
+display: flex !important;
+
+min-height: 125px !important;
+
+padding: 20px !important;
+
+background: #ffffff !important;
+
+border:
+1px solid #dde5e1 !important;
+
+border-radius: 14px !important;
+
+box-shadow:
+0 5px 18px
+rgba(23, 59, 50, 0.07) !important;
+}
+
+
+.kpi-card-accent {
+background:
+linear-gradient(
+135deg,
+#214c40,
+#397062
+) !important;
+
+border-color: transparent !important;
+}
+
+
+.kpi-card-accent *,
+.kpi-card-accent .kpi-label,
+.kpi-card-accent .kpi-value {
+color: #ffffff !important;
+}
+
+
+/* KPI GRID */
+
+@media screen and (min-width: 1100px) {
+
+.kpi-grid-5 {
+display: grid !important;
+
+grid-template-columns:
+repeat(5, minmax(0, 1fr)) !important;
+
+gap: 16px !important;
+}
+
+
+.kpi-grid-4 {
+display: grid !important;
+
+grid-template-columns:
+repeat(4, minmax(0, 1fr)) !important;
+
+gap: 16px !important;
+}
+
+
+.kpi-grid-3 {
+display: grid !important;
+
+grid-template-columns:
+repeat(3, minmax(0, 1fr)) !important;
+
+gap: 16px !important;
+}
+
+}
+
+
+/* PANELES */
+
+.panel {
+display: block !important;
+
+background: #ffffff !important;
+
+border:
+1px solid #dde5e1 !important;
+
+border-radius: 14px !important;
+
+padding: 20px !important;
+
+box-shadow:
+0 5px 18px
+rgba(23, 59, 50, 0.06) !important;
+
+margin-bottom: 18px !important;
+}
+
+
+/* MINI KPI */
+
+.mini-kpi {
+background: #ffffff !important;
+
+border:
+1px solid #dde5e1 !important;
+
+border-left:
+4px solid #397062 !important;
+
+border-radius: 10px !important;
+
+padding: 14px 18px !important;
+
+box-shadow:
+0 3px 12px
+rgba(23, 59, 50, 0.05) !important;
+}
+
+
+/* HEADER */
+
+.topbar {
+background: transparent !important;
+
+border-bottom:
+1px solid #dce3df !important;
+}
+
+
+/* TABLAS */
+
+.table-wrapper {
+background: #ffffff !important;
+
+border:
+1px solid #dfe6e2 !important;
+
+border-radius: 10px !important;
+
+overflow: auto !important;
+}
+
+
+.data-table {
+background: #ffffff !important;
+}
+
+
+.data-table thead th {
+background: #eef4f1 !important;
+
+color: #214c40 !important;
+}
+
+
+/* SIDEBAR ITEMS */
+
+.sidebar .nav-item {
+display: flex !important;
+}
+
+
+.sidebar .nav-item.active {
+background: #ffffff !important;
+
+color: #173b32 !important;
+
+box-shadow:
+0 4px 12px
+rgba(0, 0, 0, 0.1) !important;
+}
+
+
+/* SELECTOR */
+
+.sidebar #projectSelect {
+display: block !important;
+
+width: 100% !important;
+
+background: #ffffff !important;
+
+color: #1e2925 !important;
+}
+
+
+/* LOGO */
+
+.sidebar .brand {
+display: flex !important;
+}
+
+
+/* CHART PANELS */
+
+.chart-container {
+min-height: 280px !important;
+}
+
+
+/* MEJOR SEPARACIÓN DE SECCIONES */
+
+.page {
+padding-top: 28px !important;
+}
+
+
+.section-heading {
+margin-bottom: 22px !important;
+}
+
+
+/* =========================================================
+MOBILE
+========================================================= */
+
+@media screen and (max-width: 699px) {
+
+.sidebar {
+position: relative !important;
+
+width: 100% !important;
+height: auto !important;
+}
+
+
+.main-content {
+margin-left: 0 !important;
+
+padding:
+0 16px 25px !important;
+}
+
+
+.kpi-grid {
+grid-template-columns:
+1fr !important;
+}
+
+}
+
+
