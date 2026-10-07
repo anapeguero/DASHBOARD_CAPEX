@@ -1,58 +1,97 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
+
 <meta charset="UTF-8">
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0"
+>
 
-<title>Dashboard CAPEX | Seguimiento de Iniciativas</title>
+<title>
+Dashboard CAPEX | Seguimiento de Iniciativas
+</title>
 
-<link rel="stylesheet" href="style.css">
+<link
+rel="stylesheet"
+href="style.css"
+>
 
-<!-- SheetJS para leer los Excel -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- SheetJS -->
+<script
+src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+</script>
 
 <!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script
+src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
+</script>
+
 </head>
 
+
 <body>
+
 
 <!-- =========================================================
 SIDEBAR
 ========================================================== -->
+
 <aside class="sidebar">
+
+
+<!-- MARCA -->
 
 <div class="sidebar-brand">
 
 <div class="brand-logo">
+
 <img
 src="assets/grupo-ramos.png"
 alt="Grupo Ramos"
 onerror="this.style.display='none'"
 >
+
 </div>
+
 
 <div class="brand-text">
-<h2>CAPEX</h2>
-<span>Seguimiento de iniciativas</span>
-</div>
+
+<h2>
+CAPEX
+</h2>
+
+<span>
+Seguimiento de iniciativas
+</span>
 
 </div>
 
+</div>
 
-<!-- SELECCIÓN DE INICIATIVA -->
+
+
+<!-- =====================================================
+SELECTOR DE INICIATIVA
+====================================================== -->
+
 <div class="sidebar-project">
 
 <label for="projectSelect">
 Iniciativa
 </label>
 
+
 <select id="projectSelect">
+
 <option value="">
 Cargando iniciativas...
 </option>
+
 </select>
+
 
 <div
 id="projectLoadStatus"
@@ -64,17 +103,33 @@ Esperando selección
 </div>
 
 
-<!-- NAVEGACIÓN -->
-<nav class="sidebar-nav" id="navTabs">
+
+<!-- =====================================================
+NAVEGACIÓN
+====================================================== -->
+
+<nav
+class="sidebar-nav"
+id="navTabs"
+>
+
 
 <button
 class="nav-item active"
 data-page="home"
 type="button"
 >
-<span class="nav-icon">⌂</span>
-<span>Inicio</span>
+
+<span class="nav-icon">
+⌂
+</span>
+
+<span>
+Inicio
+</span>
+
 </button>
+
 
 
 <button
@@ -82,9 +137,17 @@ class="nav-item"
 data-page="executive"
 type="button"
 >
-<span class="nav-icon">▦</span>
-<span>Resumen Ejecutivo</span>
+
+<span class="nav-icon">
+▦
+</span>
+
+<span>
+Resumen Ejecutivo
+</span>
+
 </button>
+
 
 
 <button
@@ -92,9 +155,17 @@ class="nav-item"
 data-page="budget"
 type="button"
 >
-<span class="nav-icon">RD$</span>
-<span>Presupuesto vs Real</span>
+
+<span class="nav-icon">
+$
+</span>
+
+<span>
+Presupuesto vs Real
+</span>
+
 </button>
+
 
 
 <button
@@ -102,9 +173,17 @@ class="nav-item"
 data-page="purchases"
 type="button"
 >
-<span class="nav-icon">OC</span>
-<span>Compras</span>
+
+<span class="nav-icon">
+OC
+</span>
+
+<span>
+Compras
+</span>
+
 </button>
+
 
 
 <button
@@ -112,9 +191,17 @@ class="nav-item"
 data-page="cashflow"
 type="button"
 >
-<span class="nav-icon">▥</span>
-<span>Flujo de Caja</span>
+
+<span class="nav-icon">
+▥
+</span>
+
+<span>
+Flujo de Caja
+</span>
+
 </button>
+
 
 
 <button
@@ -122,9 +209,17 @@ class="nav-item"
 data-page="tracking"
 type="button"
 >
-<span class="nav-icon">✓</span>
-<span>Seguimiento</span>
+
+<span class="nav-icon">
+✓
+</span>
+
+<span>
+Seguimiento
+</span>
+
 </button>
+
 
 
 <button
@@ -132,12 +227,23 @@ class="nav-item"
 data-page="pending"
 type="button"
 >
-<span class="nav-icon">!</span>
-<span>Pendientes</span>
+
+<span class="nav-icon">
+!
+</span>
+
+<span>
+Pendientes
+</span>
+
 </button>
+
 
 </nav>
 
+
+
+<!-- FUENTES -->
 
 <div class="sidebar-footer">
 
@@ -159,19 +265,24 @@ Flujo de Caja
 
 </div>
 
+
 </aside>
+
 
 
 <!-- =========================================================
 CONTENIDO PRINCIPAL
 ========================================================== -->
+
 <main class="main-content">
 
 
-<!-- =====================================================
+<!-- =========================================================
 HEADER
-====================================================== -->
+========================================================== -->
+
 <header class="topbar">
+
 
 <div>
 
@@ -179,9 +290,11 @@ HEADER
 COMPRA Y CONTROL DE ACTIVOS
 </div>
 
+
 <h1 id="topProjectName">
 Dashboard CAPEX
 </h1>
+
 
 <p id="topProjectSubtitle">
 Seguimiento integral de la iniciativa.
@@ -190,7 +303,9 @@ Seguimiento integral de la iniciativa.
 </div>
 
 
+
 <div class="topbar-actions">
+
 
 <div class="opening-card">
 
@@ -203,6 +318,7 @@ Apertura
 </strong>
 
 </div>
+
 
 
 <div class="countdown-card">
@@ -218,6 +334,7 @@ Días para apertura
 </div>
 
 
+
 <button
 id="refreshButton"
 class="btn-secondary"
@@ -226,12 +343,18 @@ type="button"
 Actualizar
 </button>
 
+
 </div>
+
 
 </header>
 
 
-<!-- MENSAJES -->
+
+<!-- =========================================================
+MENSAJES
+========================================================== -->
+
 <div
 id="dashboardMessage"
 class="dashboard-message hidden"
@@ -239,13 +362,16 @@ class="dashboard-message hidden"
 </div>
 
 
-<!-- =====================================================
+
+<!-- =========================================================
 INICIO
-====================================================== -->
+========================================================== -->
+
 <section
 id="page-home"
 class="page active"
 >
+
 
 <div class="page-heading">
 
@@ -255,13 +381,15 @@ class="page active"
 VISIÓN GENERAL
 </span>
 
+
 <h2>
 Seguimiento de la iniciativa
 </h2>
 
+
 <p>
-Vista consolidada del presupuesto, ejecución,
-compras y flujo de caja.
+Vista consolidada del presupuesto,
+ejecución, compras y flujo de caja.
 </p>
 
 </div>
@@ -269,8 +397,15 @@ compras y flujo de caja.
 </div>
 
 
-<!-- KPI -->
+
+<!-- =====================================================
+KPI INICIO
+====================================================== -->
+
 <div class="kpi-grid">
+
+
+<!-- PRESUPUESTO -->
 
 <article class="kpi-card">
 
@@ -282,7 +417,7 @@ Presupuesto
 id="homeBudget"
 class="kpi-value"
 >
-RD$ 0
+US$ 0.00
 </strong>
 
 <span class="kpi-note">
@@ -291,6 +426,9 @@ Presupuesto total
 
 </article>
 
+
+
+<!-- REAL -->
 
 <article class="kpi-card">
 
@@ -302,7 +440,7 @@ Real
 id="homeReal"
 class="kpi-value"
 >
-RD$ 0
+US$ 0.00
 </strong>
 
 <span class="kpi-note">
@@ -311,6 +449,9 @@ Ejecución registrada
 
 </article>
 
+
+
+<!-- DIFERENCIA -->
 
 <article class="kpi-card">
 
@@ -322,15 +463,41 @@ Diferencia
 id="homeDifference"
 class="kpi-value"
 >
-RD$ 0
+US$ 0.00
 </strong>
 
 <span class="kpi-note">
-Presupuesto menos real
+Presupuesto menos Real
 </span>
 
 </article>
 
+
+
+<!-- AHORRO RD$ -->
+
+<article class="kpi-card savings-card">
+
+<span class="kpi-label">
+Ahorro RD$
+</span>
+
+<strong
+id="homeSavingsDOP"
+class="kpi-value"
+>
+RD$ 0.00
+</strong>
+
+<span class="kpi-note">
+Diferencia US$ × tasa RD$60
+</span>
+
+</article>
+
+
+
+<!-- EJECUCIÓN -->
 
 <article class="kpi-card">
 
@@ -352,6 +519,9 @@ Real / Presupuesto
 </article>
 
 
+
+<!-- OC -->
+
 <article class="kpi-card">
 
 <span class="kpi-label">
@@ -372,6 +542,9 @@ Registros con OC
 </article>
 
 
+
+<!-- PENDIENTES -->
+
 <article class="kpi-card warning-card">
 
 <span class="kpi-label">
@@ -391,12 +564,18 @@ Marcados como Pendiente de compra
 
 </article>
 
+
 </div>
 
 
+
+<!-- =====================================================
+GRÁFICAS INICIO
+====================================================== -->
+
 <div class="dashboard-grid two-columns">
 
-<!-- PRESUPUESTO VS REAL -->
+
 <article class="panel">
 
 <div class="panel-header">
@@ -417,13 +596,16 @@ Presupuesto vs Real
 
 
 <div class="chart-container">
-<canvas id="homeBudgetChart"></canvas>
+
+<canvas id="homeBudgetChart">
+</canvas>
+
 </div>
 
 </article>
 
 
-<!-- ESTADO DE COMPRAS -->
+
 <article class="panel">
 
 <div class="panel-header">
@@ -444,16 +626,25 @@ Estado de compras
 
 
 <div class="chart-container">
-<canvas id="homePurchaseChart"></canvas>
+
+<canvas id="homePurchaseChart">
+</canvas>
+
 </div>
 
 </article>
 
+
 </div>
 
 
-<!-- RESUMEN POR PARTIDA -->
+
+<!-- =====================================================
+PARTIDAS INICIO
+====================================================== -->
+
 <article class="panel">
+
 
 <div class="panel-header">
 
@@ -472,40 +663,68 @@ Resumen por partida
 </div>
 
 
+
 <div class="table-wrapper">
 
+
 <table id="homeCategoryTable">
+
 
 <thead>
 
 <tr>
-<th>Partida</th>
-<th>Presupuesto</th>
-<th>Real</th>
-<th>Diferencia</th>
-<th>% Ejecución</th>
+
+<th>
+Partida
+</th>
+
+<th>
+Presupuesto
+</th>
+
+<th>
+Real
+</th>
+
+<th>
+Diferencia
+</th>
+
+<th>
+% Ejecución
+</th>
+
 </tr>
 
 </thead>
 
-<tbody></tbody>
+
+<tbody>
+</tbody>
+
 
 </table>
 
+
 </div>
 
+
 </article>
+
 
 </section>
 
 
-<!-- =====================================================
+
+<!-- =========================================================
 RESUMEN EJECUTIVO
-====================================================== -->
+========================================================== -->
+
 <section
 id="page-executive"
 class="page"
 >
+
 
 <div class="page-heading">
 
@@ -515,12 +734,15 @@ class="page"
 RESUMEN EJECUTIVO
 </span>
 
+
 <h2>
 Estado general de la iniciativa
 </h2>
 
+
 <p>
-Indicadores principales para seguimiento ejecutivo.
+Indicadores principales para
+seguimiento ejecutivo.
 </p>
 
 </div>
@@ -528,7 +750,11 @@ Indicadores principales para seguimiento ejecutivo.
 </div>
 
 
+
 <div class="kpi-grid">
+
+
+<!-- PRESUPUESTO -->
 
 <article class="kpi-card">
 
@@ -540,11 +766,14 @@ Presupuesto
 id="executiveBudget"
 class="kpi-value"
 >
-RD$ 0
+US$ 0.00
 </strong>
 
 </article>
 
+
+
+<!-- REAL -->
 
 <article class="kpi-card">
 
@@ -556,11 +785,14 @@ Real
 id="executiveReal"
 class="kpi-value"
 >
-RD$ 0
+US$ 0.00
 </strong>
 
 </article>
 
+
+
+<!-- DIFERENCIA -->
 
 <article class="kpi-card">
 
@@ -572,11 +804,37 @@ Diferencia
 id="executiveDifference"
 class="kpi-value"
 >
-RD$ 0
+US$ 0.00
 </strong>
 
 </article>
 
+
+
+<!-- AHORRO -->
+
+<article class="kpi-card savings-card">
+
+<span class="kpi-label">
+Ahorro RD$
+</span>
+
+<strong
+id="executiveSavingsDOP"
+class="kpi-value"
+>
+RD$ 0.00
+</strong>
+
+<span class="kpi-note">
+Diferencia US$ × RD$60
+</span>
+
+</article>
+
+
+
+<!-- EJECUCIÓN -->
 
 <article class="kpi-card">
 
@@ -594,6 +852,9 @@ class="kpi-value"
 </article>
 
 
+
+<!-- OC -->
+
 <article class="kpi-card">
 
 <span class="kpi-label">
@@ -610,6 +871,9 @@ class="kpi-value"
 </article>
 
 
+
+<!-- PENDIENTES -->
+
 <article class="kpi-card warning-card">
 
 <span class="kpi-label">
@@ -625,12 +889,18 @@ class="kpi-value"
 
 </article>
 
+
 </div>
 
 
+
+<!-- EJECUCIÓN + APERTURA -->
+
 <div class="dashboard-grid two-columns">
 
+
 <article class="panel">
+
 
 <div class="panel-header">
 
@@ -649,7 +919,9 @@ Ejecución financiera
 </div>
 
 
+
 <div class="progress-block">
+
 
 <div class="progress-info">
 
@@ -669,16 +941,21 @@ Avance
 <div
 id="executiveProgressBar"
 class="progress-bar"
-></div>
-
+>
 </div>
 
 </div>
+
+
+</div>
+
 
 </article>
 
 
+
 <article class="panel">
+
 
 <div class="panel-header">
 
@@ -697,6 +974,7 @@ Cuenta regresiva
 </div>
 
 
+
 <div class="opening-summary">
 
 <strong id="executiveDays">
@@ -713,12 +991,18 @@ días para apertura
 
 </div>
 
+
 </article>
+
 
 </div>
 
 
+
+<!-- GRÁFICA -->
+
 <article class="panel">
+
 
 <div class="panel-header">
 
@@ -738,21 +1022,29 @@ Presupuesto vs Real por partida
 
 
 <div class="chart-container large-chart">
-<canvas id="executiveCategoryChart"></canvas>
+
+<canvas id="executiveCategoryChart">
+</canvas>
+
 </div>
 
+
 </article>
+
 
 </section>
 
 
-<!-- =====================================================
+
+<!-- =========================================================
 PRESUPUESTO VS REAL
-====================================================== -->
+========================================================== -->
+
 <section
 id="page-budget"
 class="page"
 >
+
 
 <div class="page-heading">
 
@@ -767,7 +1059,7 @@ Control financiero
 </h2>
 
 <p>
-Información tomada directamente de la hoja
+Información tomada de la hoja
 <strong>Presupuesto vs Real</strong>.
 </p>
 
@@ -776,7 +1068,11 @@ Información tomada directamente de la hoja
 </div>
 
 
-<div class="kpi-grid four-columns">
+
+<!-- KPI -->
+
+<div class="kpi-grid">
+
 
 <article class="kpi-card">
 
@@ -788,10 +1084,11 @@ Presupuesto
 id="budgetTotal"
 class="kpi-value"
 >
-RD$ 0
+US$ 0.00
 </strong>
 
 </article>
+
 
 
 <article class="kpi-card">
@@ -804,10 +1101,11 @@ Real
 id="realTotal"
 class="kpi-value"
 >
-RD$ 0
+US$ 0.00
 </strong>
 
 </article>
+
 
 
 <article class="kpi-card">
@@ -820,10 +1118,32 @@ Diferencia
 id="differenceTotal"
 class="kpi-value"
 >
-RD$ 0
+US$ 0.00
 </strong>
 
 </article>
+
+
+
+<article class="kpi-card savings-card">
+
+<span class="kpi-label">
+Ahorro RD$
+</span>
+
+<strong
+id="budgetSavingsDOP"
+class="kpi-value"
+>
+RD$ 0.00
+</strong>
+
+<span class="kpi-note">
+Diferencia US$ × RD$60
+</span>
+
+</article>
+
 
 
 <article class="kpi-card">
@@ -841,10 +1161,15 @@ class="kpi-value"
 
 </article>
 
+
 </div>
 
 
+
+<!-- GRÁFICA -->
+
 <article class="panel">
+
 
 <div class="panel-header">
 
@@ -864,15 +1189,24 @@ Presupuesto vs Real por partida
 
 
 <div class="chart-container large-chart">
-<canvas id="budgetVsRealChart"></canvas>
+
+<canvas id="budgetVsRealChart">
+</canvas>
+
 </div>
+
 
 </article>
 
 
+
+<!-- TABLA -->
+
 <article class="panel">
 
+
 <div class="panel-header">
+
 
 <div>
 
@@ -887,6 +1221,7 @@ Presupuesto vs Real
 </div>
 
 
+
 <div class="panel-tools">
 
 <input
@@ -897,43 +1232,72 @@ placeholder="Buscar partida..."
 
 </div>
 
+
 </div>
+
 
 
 <div class="table-wrapper">
 
+
 <table id="budgetTable">
+
 
 <thead>
 
 <tr>
-<th>Partida</th>
-<th>Presupuesto</th>
-<th>Real</th>
-<th>Diferencia</th>
-<th>% Ejecución</th>
+
+<th>
+Partida
+</th>
+
+<th>
+Presupuesto
+</th>
+
+<th>
+Real
+</th>
+
+<th>
+Diferencia
+</th>
+
+<th>
+% Ejecución
+</th>
+
 </tr>
 
 </thead>
 
-<tbody></tbody>
+
+<tbody>
+</tbody>
+
 
 </table>
 
+
 </div>
 
+
 </article>
+
 
 </section>
 
 
-<!-- =====================================================
+
+<!-- =========================================================
 COMPRAS
-====================================================== -->
+========================================================== -->
+
 <section
 id="page-purchases"
 class="page"
 >
+
 
 <div class="page-heading">
 
@@ -943,9 +1307,11 @@ class="page"
 BD PLAN DETALLADO
 </span>
 
+
 <h2>
 Seguimiento de compras
 </h2>
+
 
 <p>
 Seguimiento de órdenes de compra,
@@ -957,7 +1323,11 @@ stock y pendientes de compra.
 </div>
 
 
+
+<!-- KPI -->
+
 <div class="kpi-grid four-columns">
+
 
 <article class="kpi-card">
 
@@ -973,6 +1343,7 @@ class="kpi-value"
 </strong>
 
 </article>
+
 
 
 <article class="kpi-card warning-card">
@@ -991,6 +1362,7 @@ class="kpi-value"
 </article>
 
 
+
 <article class="kpi-card">
 
 <span class="kpi-label">
@@ -1007,6 +1379,7 @@ class="kpi-value"
 </article>
 
 
+
 <article class="kpi-card">
 
 <span class="kpi-label">
@@ -1017,18 +1390,23 @@ Valor con OC
 id="purchasePOValue"
 class="kpi-value"
 >
-RD$ 0
+RD$ 0.00
 </strong>
 
 </article>
 
+
 </div>
 
 
+
 <!-- FILTROS -->
+
 <article class="panel filter-panel">
 
+
 <div class="filters-row">
+
 
 <div class="filter-field">
 
@@ -1045,11 +1423,13 @@ placeholder="Partida, item u orden de compra..."
 </div>
 
 
+
 <div class="filter-field">
 
 <label for="purchaseStatusFilter">
 Estado
 </label>
+
 
 <select id="purchaseStatusFilter">
 
@@ -1071,15 +1451,21 @@ Stock
 
 </select>
 
-</div>
 
 </div>
+
+
+</div>
+
 
 </article>
 
 
-<!-- TABLA COMPRAS -->
+
+<!-- TABLA -->
+
 <article class="panel">
+
 
 <div class="panel-header">
 
@@ -1098,42 +1484,76 @@ Compras por partida
 </div>
 
 
+
 <div class="table-wrapper">
 
+
 <table id="purchaseTable">
+
 
 <thead>
 
 <tr>
-<th>Partida</th>
-<th>Item</th>
-<th>Orden de compra</th>
-<th>Fecha</th>
-<th>Cant.</th>
-<th>Valor Neto RD$</th>
-<th>Estado</th>
+
+<th>
+Partida
+</th>
+
+<th>
+Item
+</th>
+
+<th>
+Orden de compra
+</th>
+
+<th>
+Fecha
+</th>
+
+<th>
+Cant.
+</th>
+
+<th>
+Valor Neto RD$
+</th>
+
+<th>
+Estado
+</th>
+
 </tr>
 
 </thead>
 
-<tbody></tbody>
+
+<tbody>
+</tbody>
+
 
 </table>
 
+
 </div>
 
+
 </article>
+
 
 </section>
 
 
-<!-- =====================================================
+
+<!-- =========================================================
 FLUJO DE CAJA
-====================================================== -->
+========================================================== -->
+
 <section
 id="page-cashflow"
 class="page"
 >
+
 
 <div class="page-heading">
 
@@ -1143,9 +1563,11 @@ class="page"
 FLUJO DE CAJA
 </span>
 
+
 <h2>
 Flujo de Caja
 </h2>
+
 
 <p>
 Información en pesos dominicanos,
@@ -1157,7 +1579,11 @@ organizada por partida y período.
 </div>
 
 
+
+<!-- KPI -->
+
 <div class="kpi-grid three-columns">
+
 
 <article class="kpi-card">
 
@@ -1169,10 +1595,11 @@ Flujo total
 id="cashflowTotal"
 class="kpi-value"
 >
-RD$ 0
+RD$ 0.00
 </strong>
 
 </article>
+
 
 
 <article class="kpi-card">
@@ -1191,6 +1618,7 @@ class="kpi-value"
 </article>
 
 
+
 <article class="kpi-card">
 
 <span class="kpi-label">
@@ -1206,11 +1634,15 @@ class="kpi-value"
 
 </article>
 
+
 </div>
 
 
-<!-- GRÁFICA DE FLUJO -->
+
+<!-- GRÁFICA -->
+
 <article class="panel">
+
 
 <div class="panel-header">
 
@@ -1230,16 +1662,24 @@ Flujo mensual
 
 
 <div class="chart-container large-chart">
-<canvas id="cashflowChart"></canvas>
+
+<canvas id="cashflowChart">
+</canvas>
+
 </div>
+
 
 </article>
 
 
+
 <!-- TABLA DESPLEGABLE -->
+
 <article class="panel">
 
+
 <div class="panel-header">
+
 
 <div>
 
@@ -1254,7 +1694,9 @@ Flujo de Caja por partida
 </div>
 
 
+
 <div class="panel-tools">
+
 
 <button
 id="expandCashflow"
@@ -1273,46 +1715,50 @@ type="button"
 Contraer todo
 </button>
 
-</div>
 
 </div>
+
+
+</div>
+
 
 
 <div class="table-wrapper cashflow-table-wrapper">
 
+
 <table id="cashflowTable">
 
-<!--
-Los encabezados se crearán
-automáticamente según los
-períodos de la hoja Excel.
--->
+
 <thead id="cashflowTableHead">
 </thead>
 
-<!--
-Las partidas y subpartidas
-serán desplegables.
--->
+
 <tbody id="cashflowTableBody">
 </tbody>
 
+
 </table>
+
 
 </div>
 
+
 </article>
+
 
 </section>
 
 
-<!-- =====================================================
+
+<!-- =========================================================
 SEGUIMIENTO
-====================================================== -->
+========================================================== -->
+
 <section
 id="page-tracking"
 class="page"
 >
+
 
 <div class="page-heading">
 
@@ -1322,9 +1768,11 @@ class="page"
 SEGUIMIENTO
 </span>
 
+
 <h2>
 Estado de ejecución
 </h2>
+
 
 <p>
 Seguimiento consolidado por partida.
@@ -1335,10 +1783,14 @@ Seguimiento consolidado por partida.
 </div>
 
 
+
 <div class="dashboard-grid two-columns">
 
-<!-- ESTADO COMPRAS -->
+
+<!-- COMPRAS -->
+
 <article class="panel">
+
 
 <div class="panel-header">
 
@@ -1358,14 +1810,21 @@ Estado de compras
 
 
 <div class="chart-container">
-<canvas id="trackingStatusChart"></canvas>
+
+<canvas id="trackingStatusChart">
+</canvas>
+
 </div>
+
 
 </article>
 
 
+
 <!-- FINANCIERO -->
+
 <article class="panel">
+
 
 <div class="panel-header">
 
@@ -1385,16 +1844,24 @@ Presupuesto vs Real
 
 
 <div class="chart-container">
-<canvas id="trackingFinancialChart"></canvas>
+
+<canvas id="trackingFinancialChart">
+</canvas>
+
 </div>
+
 
 </article>
 
+
 </div>
 
 
-<!-- TABLA SEGUIMIENTO -->
+
+<!-- TABLA -->
+
 <article class="panel">
+
 
 <div class="panel-header">
 
@@ -1413,42 +1880,76 @@ Seguimiento por partida
 </div>
 
 
+
 <div class="table-wrapper">
 
+
 <table id="trackingTable">
+
 
 <thead>
 
 <tr>
-<th>Partida</th>
-<th>Presupuesto</th>
-<th>Real</th>
-<th>% Ejecución</th>
-<th>Con OC</th>
-<th>Pendientes</th>
-<th>Stock</th>
+
+<th>
+Partida
+</th>
+
+<th>
+Presupuesto
+</th>
+
+<th>
+Real
+</th>
+
+<th>
+% Ejecución
+</th>
+
+<th>
+Con OC
+</th>
+
+<th>
+Pendientes
+</th>
+
+<th>
+Stock
+</th>
+
 </tr>
 
 </thead>
 
-<tbody></tbody>
+
+<tbody>
+</tbody>
+
 
 </table>
 
+
 </div>
 
+
 </article>
+
 
 </section>
 
 
-<!-- =====================================================
+
+<!-- =========================================================
 PENDIENTES
-====================================================== -->
+========================================================== -->
+
 <section
 id="page-pending"
 class="page"
 >
+
 
 <div class="page-heading">
 
@@ -1458,9 +1959,11 @@ class="page"
 PENDIENTES
 </span>
 
+
 <h2>
 Pendientes de compra
 </h2>
+
 
 <p>
 Solo se muestran los registros identificados
@@ -1473,7 +1976,11 @@ en BD Plan Detallado.
 </div>
 
 
+
+<!-- KPI -->
+
 <div class="kpi-grid three-columns">
+
 
 <article class="kpi-card warning-card">
 
@@ -1489,6 +1996,7 @@ class="kpi-value"
 </strong>
 
 </article>
+
 
 
 <article class="kpi-card">
@@ -1507,6 +2015,7 @@ class="kpi-value"
 </article>
 
 
+
 <article class="kpi-card">
 
 <span class="kpi-label">
@@ -1517,17 +2026,23 @@ Valor pendiente
 id="pendingValue"
 class="kpi-value"
 >
-RD$ 0
+RD$ 0.00
 </strong>
 
 </article>
 
+
 </div>
 
 
+
+<!-- TABLA -->
+
 <article class="panel">
 
+
 <div class="panel-header">
+
 
 <div>
 
@@ -1542,6 +2057,7 @@ Compras pendientes
 </div>
 
 
+
 <div class="panel-tools">
 
 <input
@@ -1552,67 +2068,107 @@ placeholder="Buscar partida o item..."
 
 </div>
 
+
 </div>
+
 
 
 <div class="table-wrapper">
 
+
 <table id="pendingTable">
+
 
 <thead>
 
 <tr>
-<th>Partida</th>
-<th>Item</th>
-<th>Cant.</th>
-<th>Presupuesto RD$</th>
-<th>Comentario</th>
+
+<th>
+Partida
+</th>
+
+<th>
+Item
+</th>
+
+<th>
+Cant.
+</th>
+
+<th>
+Presupuesto RD$
+</th>
+
+<th>
+Comentario
+</th>
+
 </tr>
 
 </thead>
 
-<tbody></tbody>
+
+<tbody>
+</tbody>
+
 
 </table>
 
+
 </div>
+
 
 </article>
 
+
 </section>
+
 
 </main>
 
 
+
 <!-- =========================================================
-CARGANDO
+LOADING
 ========================================================== -->
+
 <div
 id="loadingOverlay"
 class="loading-overlay hidden"
 >
 
+
 <div class="loading-box">
 
-<div class="spinner"></div>
+
+<div class="spinner">
+</div>
+
 
 <strong>
 Cargando iniciativa...
 </strong>
 
+
 <span id="loadingText">
 Leyendo archivo Excel
 </span>
 
-</div>
 
 </div>
+
+
+</div>
+
 
 
 <!-- =========================================================
 SCRIPT PRINCIPAL
 ========================================================== -->
+
 <script src="script.js"></script>
 
+
 </body>
+
 </html>
